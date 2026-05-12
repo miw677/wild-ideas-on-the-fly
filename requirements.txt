@@ -1,0 +1,13 @@
+# BMW NBT iDrive Extended — Python dependencies
+
+# Async BMW CAN bus interface
+python-can>=4.3.1
+
+# Config parsing
+PyYAML>=6.0.1
+
+# Launcher UI
+pygame>=2.5.2
+
+# Optional: nicer async support for older Pythons (not needed on 3.11+)
+# anyio>=4.0

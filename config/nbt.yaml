@@ -1,0 +1,71 @@
+# BMW NBT iDrive Extended — hardware configuration
+# Targets: 2012-2016 F-series BMWs with NBT head unit (iDrive 4.x)
+# Tested on: 2014 BMW 328i GT (F34), NBT iDrive 4.2
+
+# ──────────────────────────────────────────────
+# CAN Bus
+# ──────────────────────────────────────────────
+can_bus:
+  channel: can0          # SocketCAN interface (MCP2515 HAT = can0)
+  bitrate: 100000        # K-CAN is 100 kbps on F-series
+  # Set to true to print every raw CAN frame (very verbose)
+  debug_frames: false
+
+# ──────────────────────────────────────────────
+# Display output
+# ──────────────────────────────────────────────
+display:
+  # NBT 8.8" display native resolution
+  width: 1280
+  height: 480
+  # HDMI output mode; must match above when fed through LVDS converter
+  hdmi_mode: "1280x480@60"
+  # X11 display to use
+  x11_display: ":0"
+
+# ──────────────────────────────────────────────
+# Feature apps
+# ──────────────────────────────────────────────
+apps:
+  carplay:
+    # Name advertised over Bonjour (shows on the iPhone)
+    service_name: "BMW 328i"
+    # Wi-Fi AP created by hostapd for CarPlay connection
+    ap_ssid: "BMW_CarPlay"
+    ap_passphrase: "driveconnected"
+    ap_channel: 6
+    ap_interface: wlan0
+
+  browser:
+    homepage: "https://maps.google.com"
+    # Comma-separated bookmarks shown on new-tab page
+    bookmarks:
+      - label: "Maps"
+        url: "https://maps.google.com"
+      - label: "Spotify"
+        url: "https://open.spotify.com"
+      - label: "Weather"
+        url: "https://weather.com"
+      - label: "BMW Connected"
+        url: "https://www.bmwconnecteddrive.com"
+    # Enable remote debug port for navigate() API
+    remote_debug_port: 9222
+
+  video:
+    # Pause automatically when car speed > 3 km/h
+    motion_pause: true
+    # Root path to scan for video files (USB drives auto-detected here)
+    media_root: /media
+    # Supported extensions (in addition to defaults)
+    extra_extensions: []
+
+# ──────────────────────────────────────────────
+# BMW F30/F34 CAN message IDs (K-CAN, 100 kbps)
+# Change only if you have a different platform.
+# ──────────────────────────────────────────────
+can_ids:
+  idrive_controller: 0x21A
+  steering_buttons:  0x1D6
+  display_state:     0x273
+  vehicle_speed:     0x193
+  gear_selector:     0x130

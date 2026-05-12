@@ -1,0 +1,19 @@
+[Unit]
+Description=BMW NBT iDrive Extended Feature Layer
+After=network.target systemd-networkd.service graphical.target
+Wants=avahi-daemon.service
+
+[Service]
+Type=simple
+User=__USER__
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/__USER__/.Xauthority
+ExecStart=__VENV__/bin/python -m src.main --config __REPO_DIR__/config/nbt.yaml
+WorkingDirectory=__REPO_DIR__
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical.target
