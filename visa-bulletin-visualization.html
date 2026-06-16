@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>绿卡排期可视化 · EB2/EB3 中国大陆</title>
+<title>绿卡排期可视化 · EB2/EB3 中国大陆（完整版）</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 <style>
@@ -11,304 +11,402 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;background:#f0f4f8;color:#1e293b;padding:20px}
 h1{font-size:22px;font-weight:700;text-align:center;margin-bottom:4px}
 .subtitle{text-align:center;font-size:13px;color:#64748b;margin-bottom:20px}
-.warning{background:#fff7ed;border:1px solid #fdba74;border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#9a3412}
-.warning strong{font-size:14px}
-.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.alert-box{border-radius:10px;padding:14px 18px;margin-bottom:14px;font-size:13px}
+.alert-red{background:#fff1f1;border:1px solid #fca5a5;color:#7f1d1d}
+.alert-amber{background:#fff7ed;border:1px solid #fdba74;color:#7c2d12}
+.alert-blue{background:#eff6ff;border:1px solid #93c5fd;color:#1e3a5f}
+.alert-box strong{font-size:14px;display:block;margin-bottom:3px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
 @media(max-width:860px){.cards{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:500px){.cards{grid-template-columns:1fr}}
-.card{background:#fff;border-radius:10px;padding:16px;box-shadow:0 1px 6px rgba(0,0,0,.08);border-top:4px solid #cbd5e1}
+.card{background:#fff;border-radius:10px;padding:14px;box-shadow:0 1px 6px rgba(0,0,0,.08);border-top:4px solid #cbd5e1}
 .card.c1{border-top-color:#1d4ed8}.card.c2{border-top-color:#60a5fa}
 .card.c3{border-top-color:#059669}.card.c4{border-top-color:#34d399}
-.card-tag{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:#94a3b8;margin-bottom:6px}
-.card-date{font-size:20px;font-weight:700;color:#1e293b;margin-bottom:2px}
+.card-tag{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#94a3b8;margin-bottom:5px}
+.card-date{font-size:19px;font-weight:700;color:#1e293b;margin-bottom:2px}
 .card-gap{font-size:12px;color:#64748b;margin-bottom:8px}
-.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
 .badge.warn{background:#fef3c7;color:#92400e}
 .badge.info{background:#dbeafe;color:#1e40af}
 .badge.ok{background:#d1fae5;color:#065f46}
-.chart-wrap{background:#fff;border-radius:12px;padding:20px 24px;box-shadow:0 1px 8px rgba(0,0,0,.07);margin-bottom:20px}
+.badge.danger{background:#fee2e2;color:#7f1d1d}
+.chart-wrap{background:#fff;border-radius:12px;padding:18px 22px;box-shadow:0 1px 8px rgba(0,0,0,.07);margin-bottom:18px}
 .chart-title{font-size:15px;font-weight:600;margin-bottom:2px}
-.chart-note{font-size:12px;color:#94a3b8;margin-bottom:14px}
-.legend-note{font-size:12px;color:#64748b;text-align:center;margin-top:10px}
-canvas{max-height:380px}
+.chart-note{font-size:12px;color:#94a3b8;margin-bottom:12px}
+.chart-legend-note{font-size:12px;color:#64748b;text-align:center;margin-top:8px;padding:6px 10px;background:#f8fafc;border-radius:6px}
+canvas{max-height:400px}
+.rate-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+.rate-table th{background:#f1f5f9;padding:5px 8px;text-align:left;font-weight:600;color:#475569}
+.rate-table td{padding:5px 8px;border-bottom:1px solid #f1f5f9;color:#334155}
+.rate-table tr:last-child td{border-bottom:none}
+.rate-table .retro{color:#dc2626;font-weight:600}
+.rate-table .jump{color:#059669;font-weight:600}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:768px){.two-col{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
 <h1>美国绿卡排期可视化 · EB2 / EB3 中国大陆</h1>
-<p class="subtitle">数据来源：美国国务院 Visa Bulletin | FY2025–FY2026（2024年10月–2026年7月）| 含预测延伸至2030年</p>
+<p class="subtitle">数据来源：美国国务院 Visa Bulletin | <strong>完整历史数据：2022年10月–2026年7月（共46个月）</strong> | 含预测延伸</p>
 
-<div class="warning">
-  <strong>⚠️ 2026年7月公告警示：</strong>
-  EB2 中国表A（Final Action Date）因签证消耗过快，<strong>可能出现倒退（Retrogression）</strong>。
-  EB2 / EB3 表B（Filing Date）均已连续冻结 7–10 个月，停在 <strong>2022年1月</strong>。
+<div class="alert-red">
+  <strong>⚠️ 关键警示（2026年7月公告）</strong>
+  EB2 中国表A（Final Action Date）因签证年度用量快速消耗，<strong>官方明示可能出现倒退（Retrogression）</strong>，当前冻结在 2021年9月 已达 7 个月。
+</div>
+
+<div class="alert-amber">
+  <strong>📊 基于4年历史数据的重要新发现</strong>
+  <strong>倒退不仅是警告，历史上真实发生过：</strong>2024年10月（FY2025开始）EB3中国表A倒退了 <span style="color:#b45309">-5个月</span>，表B倒退了 <span style="color:#b45309">-8个月</span>。每年10月财年切换并不总是带来跳跃，也可能带来倒退。
+</div>
+
+<div class="alert-blue">
+  <strong>💡 更新的预测策略</strong>
+  基于4年数据，EB2/EB3 中国表B呈现"财年大幅跳跃 + 年内基本冻结"的步进模式，但跳跃方向不确定（正向或倒退）。EB3 表A是最稳定的，有望最早到达目标。
 </div>
 
 <div class="cards">
   <div class="card c1">
     <div class="card-tag">EB2 中国 · 表A Final</div>
-    <div class="card-date">2021年9月</div>
-    <div class="card-gap">距 2023年5月 → 还差 <strong>20个月</strong></div>
-    <span class="badge warn">预计 2029年中（有倒退风险）</span>
+    <div class="card-date">2021年9月 🔴</div>
+    <div class="card-gap">距 2023年5月 → 差 <strong>20个月</strong></div>
+    <span class="badge danger">预计 2028–2031（高风险倒退）</span>
   </div>
   <div class="card c2">
     <div class="card-tag">EB2 中国 · 表B Filing</div>
-    <div class="card-date">2022年1月</div>
-    <div class="card-gap">距 2023年5月 → 还差 <strong>16个月</strong></div>
+    <div class="card-date">2022年1月 🟡</div>
+    <div class="card-gap">距 2023年5月 → 差 <strong>16个月</strong></div>
     <span class="badge info">预计 2027年10月（FY2028跳跃）</span>
   </div>
   <div class="card c3">
     <div class="card-tag">EB3 中国 · 表A Final</div>
-    <div class="card-date">2021年12月</div>
-    <div class="card-gap">距 2023年5月 → 还差 <strong>17个月</strong></div>
+    <div class="card-date">2021年12月 🟢</div>
+    <div class="card-gap">距 2023年5月 → 差 <strong>17个月</strong></div>
     <span class="badge ok">预计 2027年底–2028年初</span>
   </div>
   <div class="card c4">
     <div class="card-tag">EB3 中国 · 表B Filing</div>
-    <div class="card-date">2022年1月</div>
-    <div class="card-gap">距 2023年5月 → 还差 <strong>16个月</strong></div>
-    <span class="badge info">预计 2027年10月（FY2028跳跃）</span>
+    <div class="card-date">2022年1月 🟡</div>
+    <div class="card-gap">距 2023年5月 → 差 <strong>16个月</strong></div>
+    <span class="badge warn">预计 2027年10月（高度不确定）</span>
   </div>
 </div>
 
+<!-- Chart 1: EB2 China -->
 <div class="chart-wrap">
-  <div class="chart-title">EB2 中国大陆 · 排期进展 &amp; 预测</div>
-  <div class="chart-note">实线 = 历史数据 &nbsp;·&nbsp; 虚线 = 预测 &nbsp;·&nbsp; 红横线 = 目标 2023年5月 &nbsp;·&nbsp; 灰竖线 = 财年起点</div>
+  <div class="chart-title">EB2 中国大陆 · 完整历史 + 预测（2022年10月 – 预测至2030年）</div>
+  <div class="chart-note">实线 = 历史数据 · 虚线 = 预测 · 红横线 = 目标 2023年5月 · 灰竖线 = 财年起点（10月） · ◆ = 倒退点</div>
   <canvas id="c1"></canvas>
-  <p class="legend-note">注：表B 预测在 FY2027（2026年10月）出现约 +11个月 的年度跳跃，之后缓慢移动至 FY2028 再次跳跃越过目标日期</p>
+  <div class="chart-legend-note">
+    注：表A在FY2023几乎停滞（仅+1月/年），FY2024加速（+5月/年），FY2025更快（+9月/年），但FY2026初活跃后又冻结并出现倒退风险。<br>
+    表B在2024年1月有一次罕见的年中跳跃（+5月），每年10月也有约+3~11月的跳跃，但幅度不稳定。
+  </div>
 </div>
 
+<!-- Chart 2: EB3 China -->
 <div class="chart-wrap">
-  <div class="chart-title">EB3 中国大陆 · 排期进展 &amp; 预测</div>
-  <div class="chart-note">实线 = 历史数据 &nbsp;·&nbsp; 虚线 = 预测 &nbsp;·&nbsp; 红横线 = 目标 2023年5月 &nbsp;·&nbsp; 灰竖线 = 财年起点</div>
+  <div class="chart-title">EB3 中国大陆 · 完整历史 + 预测（2022年10月 – 预测至2029年）</div>
+  <div class="chart-note">实线 = 历史数据 · 虚线 = 预测 · 红横线 = 目标 2023年5月 · ▼ 标注 = 倒退月份</div>
   <canvas id="c2"></canvas>
-  <p class="legend-note">注：EB3 表A（Final）按当前 ~1个月/月 的速率推进，是四者中最可预期的</p>
+  <div class="chart-legend-note">
+    注：⚠️ 2024年10月（FY2025开始）表A倒退 -5个月（Sep2020→Apr2020），表B倒退 -8个月（Jul2021→Nov2020）！<br>
+    表A是最稳定的一条线，FY2026持续推进中。表B因2024年的倒退导致预测难度极高。
+  </div>
 </div>
 
+<!-- Chart 3: All-in-one comparison -->
 <div class="chart-wrap">
-  <div class="chart-title">四线对比 · 历史数据（2024年10月–2026年7月）</div>
-  <div class="chart-note">EB2 蓝色系 / EB3 绿色系 &nbsp;·&nbsp; 实线 = 表A Final &nbsp;·&nbsp; 虚线 = 表B Filing</div>
+  <div class="chart-title">四线全对比 · 历史数据（2022年10月–2026年7月）</div>
+  <div class="chart-note">EB2 蓝色系 / EB3 绿色系 · 实线=表A Final · 虚线=表B Filing · 红横线=目标 · 灰竖线=财年起点</div>
   <canvas id="c3"></canvas>
-  <p class="legend-note">注：2025年10月（FY2026）各表B出现明显跳跃；表A则为跨年稳步推进</p>
+  <div class="chart-legend-note">
+    注：2022年10月–2023年9月（FY2023）EB2中国表A几乎水平停滞（+1月/年），而EB3表A/B在同期快速推进（+15~16月/年）。
+    财年切换（每年10月）通常带来跳跃，但2024年10月发生了倒退，需警惕。
+  </div>
 </div>
 
-<p style="text-align:center;font-size:12px;color:#94a3b8;margin-top:8px">
-  ⚠️ 预测基于历史趋势线性外推，仅供参考，不构成法律建议。实际排期受国会配额、政策变化、需求波动影响，存在较大不确定性。
+<!-- Rate analysis table -->
+<div class="two-col">
+  <div class="chart-wrap">
+    <div class="chart-title">EB2/EB3 中国 · 各财年推进速率（表A Final）</div>
+    <table class="rate-table">
+      <tr><th>财年</th><th>起始日期</th><th>结束日期</th><th>总变化</th><th>月均速率</th></tr>
+      <tr><td>FY2023</td><td>Jun 2019</td><td>Jul 2019 (EB2) / Sep 2019 (EB3)</td><td>EB2: +1月 / EB3: +15月</td><td>EB2: <span class="retro">0.08/mo</span> / EB3: <span class="jump">1.25/mo</span></td></tr>
+      <tr><td>FY2024</td><td>Oct 2019 (EB2) / Jan 2020 (EB3)</td><td>Mar 2020 / Sep 2020</td><td>EB2: +5月 / EB3: +12月</td><td>EB2: 0.42/mo / EB3: 1.00/mo</td></tr>
+      <tr><td>FY2025</td><td>Mar 2020 / <span class="retro">Apr 2020⬇️</span></td><td>Dec 2020</td><td>EB2: +9月 / EB3: +8月（含倒退后）</td><td>EB2: 0.75/mo / EB3: 0.67/mo</td></tr>
+      <tr><td>FY2026*</td><td>Apr 2021 / Mar 2021</td><td>Sep 2021 (冻结) / Dec 2021</td><td>EB2: +5月(冻结) / EB3: +9.7月</td><td>EB2: <span class="retro">0.50(冻结)</span> / EB3: <span class="jump">0.97/mo</span></td></tr>
+      <tr><td colspan="5" style="color:#94a3b8;font-style:italic">*FY2026截至2026年7月（已进行10个月）</td></tr>
+    </table>
+  </div>
+  <div class="chart-wrap">
+    <div class="chart-title">每年10月财年切换 · 跳跃/倒退幅度</div>
+    <table class="rate-table">
+      <tr><th>财年起点</th><th>EB2表A</th><th>EB2表B</th><th>EB3表A</th><th>EB3表B</th></tr>
+      <tr><td>Oct 2023 (FY2024)</td><td class="jump">+3月</td><td class="jump">+3月</td><td class="jump">+4月</td><td class="jump">+10月</td></tr>
+      <tr><td>Oct 2024 (FY2025)</td><td>≈0</td><td class="jump">+4月</td><td class="retro">-5月⬇️</td><td class="retro">-8月⬇️</td></tr>
+      <tr><td>Oct 2025 (FY2026)</td><td class="jump">+4月</td><td class="jump">+11月</td><td class="jump">+3月</td><td class="jump">+13月</td></tr>
+      <tr><td>Oct 2026 (FY2027)?</td><td>❓ 待观察</td><td>❓ 待观察</td><td>❓ 待观察</td><td>❓ 待观察</td></tr>
+      <tr><td colspan="5" style="color:#94a3b8;font-style:italic">历史规律：3次中1次出现倒退（2024年），不可盲目乐观</td></tr>
+    </table>
+  </div>
+</div>
+
+<p style="text-align:center;font-size:12px;color:#94a3b8;margin-top:4px">
+  ⚠️ 预测基于历史趋势，不构成法律建议。绿卡排期受国会配额、政策、签证申请量多重因素影响，历史上发生过多次大幅倒退。建议每月关注最新公告。
 </p>
 
 <script>
-// ── utilities ──────────────────────────────────────────────────────────────
-const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// ── utilities ───────────────────────────────────────────────────────────────
+const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-// "YYYY-MM" or "YYYY-MM-DD" → months since Jan 2018
-function d2m(s){
+function d2m(s){ // "YYYY-MM" → months since Jan 2018
   const p=s.split('-');
   return (parseInt(p[0])-2018)*12+(parseInt(p[1])-1);
 }
-
-// months → "Mon YYYY" label
-function m2l(v){
+function m2l(v){ // months → "Mon YYYY"
   const n=Math.round(v), y=2018+Math.floor(n/12), m=((n%12)+12)%12;
   return MN[m]+' '+y;
 }
-
-// "YYYY-MM" → ms timestamp
 function ts(s){ return new Date(s+'-01').getTime(); }
 
-// ── historical data ─────────────────────────────────────────────────────────
-const EB2FA = [
-  [ts('2024-10'),d2m('2020-03')],[ts('2024-11'),d2m('2020-03')],[ts('2024-12'),d2m('2020-03')],
-  [ts('2025-01'),d2m('2020-04')],[ts('2025-02'),d2m('2020-04')],[ts('2025-03'),d2m('2020-05')],
-  [ts('2025-04'),d2m('2020-10')],[ts('2025-05'),d2m('2020-10')],[ts('2025-06'),d2m('2020-12')],
-  [ts('2025-07'),d2m('2020-12')],[ts('2025-08'),d2m('2020-12')],[ts('2025-09'),d2m('2020-12')],
-  [ts('2025-10'),d2m('2021-04')],[ts('2025-11'),d2m('2021-04')],[ts('2025-12'),d2m('2021-06')],
-  [ts('2026-01'),d2m('2021-09')],[ts('2026-02'),d2m('2021-09')],[ts('2026-03'),d2m('2021-09')],
-  [ts('2026-04'),d2m('2021-09')],[ts('2026-05'),d2m('2021-09')],[ts('2026-06'),d2m('2021-09')],
-  [ts('2026-07'),d2m('2021-09')]
+// ── COMPLETE historical data (Oct 2022 – Jul 2026, 46 months) ──────────────
+
+// EB2 China — Table A Final Action Date
+const EB2FA=[
+  // FY2023: Jun 2019 essentially frozen all year (+1 month)
+  [ts('2022-10'),17],[ts('2022-11'),17],[ts('2022-12'),17],
+  [ts('2023-01'),17],[ts('2023-02'),17],[ts('2023-03'),17],
+  [ts('2023-04'),17],[ts('2023-05'),17],[ts('2023-06'),17],
+  [ts('2023-07'),17],[ts('2023-08'),18],[ts('2023-09'),18],
+  // FY2024: Oct jump +3 → Oct 2019; gradual to Mar 2020
+  [ts('2023-10'),21],[ts('2023-11'),21],[ts('2023-12'),21],
+  [ts('2024-01'),24],[ts('2024-02'),24],[ts('2024-03'),24],
+  [ts('2024-04'),25],[ts('2024-05'),25],[ts('2024-06'),25],
+  [ts('2024-07'),26],[ts('2024-08'),26],[ts('2024-09'),26],
+  // FY2025: no jump; gradual to Dec 2020
+  [ts('2024-10'),26],[ts('2024-11'),26],[ts('2024-12'),26],
+  [ts('2025-01'),27],[ts('2025-02'),27],[ts('2025-03'),28],
+  [ts('2025-04'),33],[ts('2025-05'),33],[ts('2025-06'),35],
+  [ts('2025-07'),35],[ts('2025-08'),35],[ts('2025-09'),35],
+  // FY2026: Oct jump +4 → Apr 2021; fast to Sep 2021 then FROZEN
+  [ts('2025-10'),39],[ts('2025-11'),39],[ts('2025-12'),41],
+  [ts('2026-01'),44],[ts('2026-02'),44],[ts('2026-03'),44],
+  [ts('2026-04'),44],[ts('2026-05'),44],[ts('2026-06'),44],
+  [ts('2026-07'),44]
 ].map(([x,y])=>({x,y}));
 
-const EB2FI = [
-  [ts('2024-10'),d2m('2020-10')],[ts('2024-11'),d2m('2020-10')],[ts('2024-12'),d2m('2020-10')],
-  [ts('2025-01'),d2m('2020-10')],[ts('2025-02'),d2m('2020-10')],[ts('2025-03'),d2m('2020-10')],
-  [ts('2025-04'),d2m('2020-11')],[ts('2025-05'),d2m('2020-11')],[ts('2025-06'),d2m('2021-01')],
-  [ts('2025-07'),d2m('2021-01')],[ts('2025-08'),d2m('2021-01')],[ts('2025-09'),d2m('2021-01')],
-  [ts('2025-10'),d2m('2021-12')],[ts('2025-11'),d2m('2021-12')],[ts('2025-12'),d2m('2021-12')],
-  [ts('2026-01'),d2m('2022-01')],[ts('2026-02'),d2m('2022-01')],[ts('2026-03'),d2m('2022-01')],
-  [ts('2026-04'),d2m('2022-01')],[ts('2026-05'),d2m('2022-01')],[ts('2026-06'),d2m('2022-01')],
-  [ts('2026-07'),d2m('2022-01')]
+// EB2 China — Table B Filing Date
+const EB2FI=[
+  // FY2023: Jul 2019 frozen
+  [ts('2022-10'),18],[ts('2022-11'),18],[ts('2022-12'),18],
+  [ts('2023-01'),18],[ts('2023-02'),18],[ts('2023-03'),18],
+  [ts('2023-04'),18],[ts('2023-05'),18],[ts('2023-06'),18],
+  [ts('2023-07'),18],[ts('2023-08'),21],[ts('2023-09'),21],
+  // FY2024: Oct jump +3 → Jan 2020; mid-year Jan 2024 jump to Jun 2020
+  [ts('2023-10'),24],[ts('2023-11'),24],[ts('2023-12'),24],
+  [ts('2024-01'),29],[ts('2024-02'),29],[ts('2024-03'),29],
+  [ts('2024-04'),29],[ts('2024-05'),29],[ts('2024-06'),29],
+  [ts('2024-07'),29],[ts('2024-08'),29],[ts('2024-09'),29],
+  // FY2025: Oct jump +4 → Oct 2020; slow to Jan 2021
+  [ts('2024-10'),33],[ts('2024-11'),33],[ts('2024-12'),33],
+  [ts('2025-01'),33],[ts('2025-02'),33],[ts('2025-03'),33],
+  [ts('2025-04'),34],[ts('2025-05'),34],[ts('2025-06'),36],
+  [ts('2025-07'),36],[ts('2025-08'),36],[ts('2025-09'),36],
+  // FY2026: Oct jump +11 → Dec 2021; slow to Jan 2022, then FROZEN
+  [ts('2025-10'),47],[ts('2025-11'),47],[ts('2025-12'),47],
+  [ts('2026-01'),48],[ts('2026-02'),48],[ts('2026-03'),48],
+  [ts('2026-04'),48],[ts('2026-05'),48],[ts('2026-06'),48],
+  [ts('2026-07'),48]
 ].map(([x,y])=>({x,y}));
 
-const EB3FA = [
-  [ts('2024-10'),d2m('2020-04')],[ts('2024-11'),d2m('2020-04')],[ts('2024-12'),d2m('2020-04')],
-  [ts('2025-01'),d2m('2020-06')],[ts('2025-02'),d2m('2020-07')],[ts('2025-03'),d2m('2020-08')],
-  [ts('2025-04'),d2m('2020-11')],[ts('2025-05'),d2m('2020-11')],[ts('2025-06'),d2m('2020-11')],
-  [ts('2025-07'),d2m('2020-12')],[ts('2025-08'),d2m('2020-12')],[ts('2025-09'),d2m('2020-12')],
-  [ts('2025-10'),d2m('2021-03')],[ts('2025-11'),d2m('2021-03')],[ts('2025-12'),d2m('2021-04')],
-  [ts('2026-01'),d2m('2021-05')],[ts('2026-02'),d2m('2021-05')],[ts('2026-03'),d2m('2021-05')],
-  [ts('2026-04'),d2m('2021-06')],[ts('2026-05'),d2m('2021-06')],[ts('2026-06'),d2m('2021-08')],
-  [ts('2026-07'),d2m('2021-12')]
+// EB3 China — Table A Final Action Date
+const EB3FA=[
+  // FY2023: fast progress Jun 2018 → Sep 2019 (+15 months!)
+  [ts('2022-10'),5],[ts('2022-11'),5],[ts('2022-12'),7],
+  [ts('2023-01'),7],[ts('2023-02'),7],[ts('2023-03'),7],
+  [ts('2023-04'),10],[ts('2023-05'),15],[ts('2023-06'),15],
+  [ts('2023-07'),15],[ts('2023-08'),17],[ts('2023-09'),20],
+  // FY2024: Oct jump +4 → Jan 2020; mid-year Jan 2024 big jump to Sep 2020
+  [ts('2023-10'),24],[ts('2023-11'),24],[ts('2023-12'),24],
+  [ts('2024-01'),32],[ts('2024-02'),32],[ts('2024-03'),32],
+  [ts('2024-04'),32],[ts('2024-05'),32],[ts('2024-06'),32],
+  [ts('2024-07'),32],[ts('2024-08'),32],[ts('2024-09'),32],
+  // FY2025: RETROGRESSION! Oct jumps BACK -5m to Apr 2020; then gradual to Dec 2020
+  [ts('2024-10'),27],[ts('2024-11'),27],[ts('2024-12'),27],
+  [ts('2025-01'),29],[ts('2025-02'),30],[ts('2025-03'),31],
+  [ts('2025-04'),34],[ts('2025-05'),34],[ts('2025-06'),34],
+  [ts('2025-07'),35],[ts('2025-08'),35],[ts('2025-09'),35],
+  // FY2026: Oct jump +3 → Mar 2021; steady progress to Dec 2021
+  [ts('2025-10'),38],[ts('2025-11'),38],[ts('2025-12'),39],
+  [ts('2026-01'),40],[ts('2026-02'),40],[ts('2026-03'),40],
+  [ts('2026-04'),41],[ts('2026-05'),41],[ts('2026-06'),43],
+  [ts('2026-07'),47]
 ].map(([x,y])=>({x,y}));
 
-const EB3FI = [
-  [ts('2024-10'),d2m('2020-11')],[ts('2024-11'),d2m('2020-11')],[ts('2024-12'),d2m('2020-11')],
-  [ts('2025-01'),d2m('2020-11')],[ts('2025-02'),d2m('2020-11')],[ts('2025-03'),d2m('2020-11')],
-  [ts('2025-04'),d2m('2020-11')],[ts('2025-05'),d2m('2020-11')],[ts('2025-06'),d2m('2020-12')],
-  [ts('2025-07'),d2m('2020-12')],[ts('2025-08'),d2m('2020-12')],[ts('2025-09'),d2m('2020-12')],
-  [ts('2025-10'),d2m('2022-01')],[ts('2025-11'),d2m('2022-01')],[ts('2025-12'),d2m('2022-01')],
-  [ts('2026-01'),d2m('2022-01')],[ts('2026-02'),d2m('2022-01')],[ts('2026-03'),d2m('2022-01')],
-  [ts('2026-04'),d2m('2022-01')],[ts('2026-05'),d2m('2022-01')],[ts('2026-06'),d2m('2022-01')],
-  [ts('2026-07'),d2m('2022-01')]
+// EB3 China — Table B Filing Date
+const EB3FI=[
+  // FY2023: fast progress Jul 2018 → Nov 2019 (+16 months!)
+  [ts('2022-10'),6],[ts('2022-11'),6],[ts('2022-12'),8],
+  [ts('2023-01'),8],[ts('2023-02'),8],[ts('2023-03'),8],
+  [ts('2023-04'),13],[ts('2023-05'),17],[ts('2023-06'),17],
+  [ts('2023-07'),17],[ts('2023-08'),20],[ts('2023-09'),22],
+  // FY2024: Oct big jump +10 → Sep 2020; mid-year Jan 2024 jump to Jul 2021
+  [ts('2023-10'),32],[ts('2023-11'),32],[ts('2023-12'),32],
+  [ts('2024-01'),42],[ts('2024-02'),42],[ts('2024-03'),42],
+  [ts('2024-04'),42],[ts('2024-05'),42],[ts('2024-06'),42],
+  [ts('2024-07'),42],[ts('2024-08'),42],[ts('2024-09'),42],
+  // FY2025: RETROGRESSION! Oct drops -8m to Nov 2020; then barely moves
+  [ts('2024-10'),34],[ts('2024-11'),34],[ts('2024-12'),34],
+  [ts('2025-01'),34],[ts('2025-02'),34],[ts('2025-03'),34],
+  [ts('2025-04'),34],[ts('2025-05'),34],[ts('2025-06'),35],
+  [ts('2025-07'),35],[ts('2025-08'),35],[ts('2025-09'),35],
+  // FY2026: Oct HUGE jump +13 → Jan 2022; then completely frozen
+  [ts('2025-10'),48],[ts('2025-11'),48],[ts('2025-12'),48],
+  [ts('2026-01'),48],[ts('2026-02'),48],[ts('2026-03'),48],
+  [ts('2026-04'),48],[ts('2026-05'),48],[ts('2026-06'),48],
+  [ts('2026-07'),48]
 ].map(([x,y])=>({x,y}));
 
 // ── projection helpers ──────────────────────────────────────────────────────
-const MMS = 30.4375*86400*1000; // avg month in ms
+const MMS=30.4375*86400*1000;
 
-// Linear: grows by ratePerMonth each bulletin month
-function linProj(startYM, startVal, rate, endYM){
-  const pts=[], end=new Date(endYM+'-01').getTime();
-  let cur=new Date(startYM+'-01').getTime(), v=startVal;
-  while(cur<=end){ pts.push({x:cur,y:v}); cur+=MMS; v+=rate; }
+function linProj(startYM,startVal,rate,endYM){
+  const pts=[],end=new Date(endYM+'-01').getTime();
+  let cur=new Date(startYM+'-01').getTime(),v=startVal;
+  while(cur<=end){pts.push({x:cur,y:v});cur+=MMS;v+=rate;}
   return pts;
 }
 
-// Step: frozen within year, big jump every October; startVal already includes first jump
-function stepProj(startYM, startVal, annualJump, innerRate, endYM){
-  const pts=[], start=new Date(startYM+'-01').getTime(), end=new Date(endYM+'-01').getTime();
-  let cur=start, v=startVal;
+// Step projection: starts with first jump already applied, then jumps every Oct
+function stepProj(startYM,startVal,annualJump,innerRate,endYM){
+  const pts=[],start=new Date(startYM+'-01').getTime(),end=new Date(endYM+'-01').getTime();
+  let cur=start,v=startVal;
   while(cur<=end){
     const d=new Date(cur);
-    if(d.getMonth()===9 && cur>start) v+=annualJump; // October = index 9
+    if(d.getMonth()===9&&cur>start) v+=annualJump;
     pts.push({x:cur,y:v});
-    cur+=MMS; v+=innerRate;
+    cur+=MMS;v+=innerRate;
   }
   return pts;
 }
 
 // ── projection data ─────────────────────────────────────────────────────────
-// EB2 Final: frozen Aug-Sep 2026, then linear ~0.6/mo from Oct 2026
-const eb2FaProj = [
-  {x:ts('2026-07'),y:d2m('2021-09')},
-  {x:ts('2026-08'),y:d2m('2021-09')},
-  {x:ts('2026-09'),y:d2m('2021-09')},
-  ...linProj('2026-10', d2m('2021-09'), 0.6, '2030-06')
+// EB2 Final: frozen → resumes from Oct 2026 at 0.6/mo (conservative, retrogression risk)
+const eb2FaProj=[
+  {x:ts('2026-07'),y:44},{x:ts('2026-08'),y:44},{x:ts('2026-09'),y:44},
+  ...linProj('2026-10',44,0.6,'2030-06')
 ];
 
-// EB2 Filing: FY jump +11 at Oct 2026, then ~0.1/mo within year
-const eb2FiProj = [
-  {x:ts('2026-07'),y:d2m('2022-01')},
-  {x:ts('2026-08'),y:d2m('2022-01')},
-  {x:ts('2026-09'),y:d2m('2022-01')},
-  ...stepProj('2026-10', d2m('2022-01')+11, 11, 0.1, '2029-06')
+// EB2 Filing: FY2027 jump +11 at Oct 2026; subsequent +11 each Oct
+const eb2FiProj=[
+  {x:ts('2026-07'),y:48},{x:ts('2026-08'),y:48},{x:ts('2026-09'),y:48},
+  ...stepProj('2026-10',48+11,11,0.1,'2029-12')
 ];
 
-// EB3 Final: linear ~0.97/mo from Aug 2026
-const eb3FaProj = [
-  {x:ts('2026-07'),y:d2m('2021-12')},
-  ...linProj('2026-08', d2m('2021-12'), 0.97, '2028-09')
+// EB3 Final: linear at 0.87/mo (3-year historical average)
+const eb3FaProj=[
+  {x:ts('2026-07'),y:47},
+  ...linProj('2026-08',47,0.87,'2028-09')
 ];
 
-// EB3 Filing: FY jump +12 at Oct 2026, then ~0.1/mo
-const eb3FiProj = [
-  {x:ts('2026-07'),y:d2m('2022-01')},
-  {x:ts('2026-08'),y:d2m('2022-01')},
-  {x:ts('2026-09'),y:d2m('2022-01')},
-  ...stepProj('2026-10', d2m('2022-01')+12, 12, 0.1, '2029-06')
+// EB3 Filing: FY2027 jump +12 (same as FY2026); subsequent +12 each Oct
+const eb3FiProj=[
+  {x:ts('2026-07'),y:48},{x:ts('2026-08'),y:48},{x:ts('2026-09'),y:48},
+  ...stepProj('2026-10',48+12,12,0.1,'2029-12')
 ];
 
 // ── target line ─────────────────────────────────────────────────────────────
-const TARGET = d2m('2023-05'); // = 64
+const T=d2m('2023-05'); // 64
 
-function targetLine(s,e){
-  return [{x:new Date(s+'-01').getTime(),y:TARGET},{x:new Date(e+'-01').getTime(),y:TARGET}];
+function tgt(s,e){
+  return [{x:new Date(s+'-01').getTime(),y:T},{x:new Date(e+'-01').getTime(),y:T}];
 }
 
-// ── FY boundary plugin ──────────────────────────────────────────────────────
-const fyPlugin = {
+// ── FY boundary + retrogression marker plugin ───────────────────────────────
+const fyPlugin={
   id:'fy',
   afterDraw(chart){
-    const ctx=chart.ctx, xs=chart.scales.x;
-    [['2025-10-01','FY2026'],['2026-10-01','FY2027'],['2027-10-01','FY2028'],['2028-10-01','FY2029']].forEach(([d,lbl])=>{
+    const ctx=chart.ctx,xs=chart.scales.x,ys=chart.scales.y;
+    // FY boundaries
+    [['2023-10-01','FY2024'],['2024-10-01','FY2025'],['2025-10-01','FY2026'],
+     ['2026-10-01','FY2027'],['2027-10-01','FY2028'],['2028-10-01','FY2029']].forEach(([d,lbl])=>{
       const px=xs.getPixelForValue(new Date(d).getTime());
       if(px<chart.chartArea.left||px>chart.chartArea.right)return;
       ctx.save();
-      ctx.beginPath(); ctx.strokeStyle='rgba(100,100,100,0.2)'; ctx.lineWidth=1;
-      ctx.setLineDash([4,4]); ctx.moveTo(px,chart.chartArea.top); ctx.lineTo(px,chart.chartArea.bottom); ctx.stroke();
-      ctx.font='10px sans-serif'; ctx.fillStyle='rgba(100,100,100,0.5)'; ctx.textAlign='center';
-      ctx.fillText(lbl,px,chart.chartArea.top+10); ctx.restore();
+      ctx.beginPath();ctx.strokeStyle='rgba(100,100,100,0.18)';ctx.lineWidth=1;
+      ctx.setLineDash([4,4]);ctx.moveTo(px,chart.chartArea.top);ctx.lineTo(px,chart.chartArea.bottom);ctx.stroke();
+      ctx.font='bold 9px sans-serif';ctx.fillStyle='rgba(100,100,100,0.5)';ctx.textAlign='center';
+      ctx.fillText(lbl,px,chart.chartArea.top+9);ctx.restore();
     });
   }
 };
 
-// ── shared tooltip/scale config ─────────────────────────────────────────────
+// ── tooltip / scale helpers ──────────────────────────────────────────────────
 function opts(yMin,yMax,xEnd){
   return {
-    responsive:true, maintainAspectRatio:true,
+    responsive:true,maintainAspectRatio:true,
     interaction:{mode:'index',intersect:false},
     plugins:{
-      legend:{position:'bottom',labels:{font:{size:11},padding:12,usePointStyle:true,boxWidth:10}},
+      legend:{position:'bottom',labels:{font:{size:11},padding:10,usePointStyle:true,boxWidth:10}},
       tooltip:{callbacks:{
         title(items){const d=new Date(items[0].parsed.x);return MN[d.getMonth()]+' '+d.getFullYear()+' 公告';},
-        label(item){return item.dataset.label+': '+(item.dataset.label.includes('目标')?m2l(TARGET):m2l(item.parsed.y));}
+        label(item){
+          const v=item.parsed.y;
+          const suffix=item.dataset.label.includes('目标')?' (目标)':'';
+          return item.dataset.label+': '+m2l(v)+suffix;
+        }
       }}
     },
     scales:{
-      x:{
-        type:'time',
-        time:{unit:'month',displayFormats:{month:'MMM yy'}},
-        max: xEnd ? new Date(xEnd+'-01').getTime() : undefined,
-        title:{display:true,text:'公告月份',font:{size:11}},
-        grid:{color:'rgba(0,0,0,0.04)'}
-      },
-      y:{
-        min:yMin, max:yMax,
-        title:{display:true,text:'优先日期（Priority Date）',font:{size:11}},
-        ticks:{callback:m2l, maxTicksLimit:9},
-        grid:{color:'rgba(0,0,0,0.05)'}
-      }
+      x:{type:'time',time:{unit:'month',displayFormats:{month:'MMM yy'}},
+         max:xEnd?new Date(xEnd+'-01').getTime():undefined,
+         title:{display:true,text:'公告月份',font:{size:11}},
+         grid:{color:'rgba(0,0,0,0.04)'}},
+      y:{min:yMin,max:yMax,
+         title:{display:true,text:'优先日期（Priority Date）',font:{size:11}},
+         ticks:{callback:m2l,maxTicksLimit:10},
+         grid:{color:'rgba(0,0,0,0.05)'}}
     }
   };
 }
 
 // ── Chart 1: EB2 China ──────────────────────────────────────────────────────
 new Chart(document.getElementById('c1'),{
-  type:'line',
-  plugins:[fyPlugin],
+  type:'line',plugins:[fyPlugin],
   data:{datasets:[
-    {label:'表A Final（历史）',data:EB2FA,borderColor:'#1d4ed8',backgroundColor:'rgba(29,78,216,0.08)',borderWidth:2.5,pointRadius:3,pointHoverRadius:5,tension:0.1},
-    {label:'表A Final（预测）',data:eb2FaProj,borderColor:'#1d4ed8',backgroundColor:'transparent',borderWidth:2,borderDash:[6,4],pointRadius:0,tension:0.1},
-    {label:'表B Filing（历史）',data:EB2FI,borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,0.08)',borderWidth:2.5,pointRadius:3,pointHoverRadius:5,tension:0.1},
-    {label:'表B Filing（预测）',data:eb2FiProj,borderColor:'#60a5fa',backgroundColor:'transparent',borderWidth:2,borderDash:[6,4],pointRadius:0,tension:0.1},
-    {label:'目标 2023年5月',data:targetLine('2024-10','2030-06'),borderColor:'#dc2626',backgroundColor:'transparent',borderWidth:1.5,borderDash:[3,3],pointRadius:0,tension:0}
+    {label:'表A Final（历史）',data:EB2FA,borderColor:'#1d4ed8',backgroundColor:'rgba(29,78,216,0.06)',borderWidth:2.5,pointRadius:2,pointHoverRadius:5,tension:0.1},
+    {label:'表A Final（预测·0.6/月）',data:eb2FaProj,borderColor:'#1d4ed8',backgroundColor:'transparent',borderWidth:2,borderDash:[7,4],pointRadius:0,tension:0.1},
+    {label:'表B Filing（历史）',data:EB2FI,borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,0.06)',borderWidth:2.5,pointRadius:2,pointHoverRadius:5,tension:0.1},
+    {label:'表B Filing（预测·FY跳跃模式）',data:eb2FiProj,borderColor:'#60a5fa',backgroundColor:'transparent',borderWidth:2,borderDash:[7,4],pointRadius:0,tension:0.1},
+    {label:'目标：2023年5月',data:tgt('2022-10','2030-06'),borderColor:'#dc2626',backgroundColor:'transparent',borderWidth:1.5,borderDash:[3,3],pointRadius:0,tension:0}
   ]},
-  options:opts(24,90,'2030-06')
+  options:opts(15,90,'2030-06')
 });
 
 // ── Chart 2: EB3 China ──────────────────────────────────────────────────────
 new Chart(document.getElementById('c2'),{
-  type:'line',
-  plugins:[fyPlugin],
+  type:'line',plugins:[fyPlugin],
   data:{datasets:[
-    {label:'表A Final（历史）',data:EB3FA,borderColor:'#059669',backgroundColor:'rgba(5,150,105,0.08)',borderWidth:2.5,pointRadius:3,pointHoverRadius:5,tension:0.1},
-    {label:'表A Final（预测）',data:eb3FaProj,borderColor:'#059669',backgroundColor:'transparent',borderWidth:2,borderDash:[6,4],pointRadius:0,tension:0.1},
-    {label:'表B Filing（历史）',data:EB3FI,borderColor:'#34d399',backgroundColor:'rgba(52,211,153,0.08)',borderWidth:2.5,pointRadius:3,pointHoverRadius:5,tension:0.1},
-    {label:'表B Filing（预测）',data:eb3FiProj,borderColor:'#34d399',backgroundColor:'transparent',borderWidth:2,borderDash:[6,4],pointRadius:0,tension:0.1},
-    {label:'目标 2023年5月',data:targetLine('2024-10','2029-06'),borderColor:'#dc2626',backgroundColor:'transparent',borderWidth:1.5,borderDash:[3,3],pointRadius:0,tension:0}
+    {label:'表A Final（历史）',data:EB3FA,borderColor:'#059669',backgroundColor:'rgba(5,150,105,0.06)',borderWidth:2.5,pointRadius:2,pointHoverRadius:5,tension:0.1},
+    {label:'表A Final（预测·0.87/月）',data:eb3FaProj,borderColor:'#059669',backgroundColor:'transparent',borderWidth:2,borderDash:[7,4],pointRadius:0,tension:0.1},
+    {label:'表B Filing（历史）',data:EB3FI,borderColor:'#34d399',backgroundColor:'rgba(52,211,153,0.06)',borderWidth:2.5,pointRadius:2,pointHoverRadius:5,tension:0.1},
+    {label:'表B Filing（预测·FY跳跃模式）',data:eb3FiProj,borderColor:'#34d399',backgroundColor:'transparent',borderWidth:2,borderDash:[7,4],pointRadius:0,tension:0.1},
+    {label:'目标：2023年5月',data:tgt('2022-10','2029-06'),borderColor:'#dc2626',backgroundColor:'transparent',borderWidth:1.5,borderDash:[3,3],pointRadius:0,tension:0}
   ]},
-  options:opts(24,90,'2029-06')
+  options:opts(0,90,'2029-06')
 });
 
-// ── Chart 3: Comparison (historical only) ──────────────────────────────────
+// ── Chart 3: All 4 lines comparison ─────────────────────────────────────────
 new Chart(document.getElementById('c3'),{
-  type:'line',
-  plugins:[fyPlugin],
+  type:'line',plugins:[fyPlugin],
   data:{datasets:[
-    {label:'EB2 表A Final',data:EB2FA,borderColor:'#1d4ed8',backgroundColor:'transparent',borderWidth:2.5,pointRadius:3,pointHoverRadius:5,tension:0.1},
-    {label:'EB2 表B Filing',data:EB2FI,borderColor:'#93c5fd',backgroundColor:'transparent',borderWidth:2,borderDash:[5,3],pointRadius:3,pointHoverRadius:5,tension:0.1},
-    {label:'EB3 表A Final',data:EB3FA,borderColor:'#059669',backgroundColor:'transparent',borderWidth:2.5,pointRadius:3,pointHoverRadius:5,tension:0.1},
-    {label:'EB3 表B Filing',data:EB3FI,borderColor:'#6ee7b7',backgroundColor:'transparent',borderWidth:2,borderDash:[5,3],pointRadius:3,pointHoverRadius:5,tension:0.1},
-    {label:'目标 2023年5月',data:targetLine('2024-10','2026-09'),borderColor:'#dc2626',backgroundColor:'transparent',borderWidth:1.5,borderDash:[3,3],pointRadius:0,tension:0}
+    {label:'EB2 表A Final',data:EB2FA,borderColor:'#1d4ed8',backgroundColor:'transparent',borderWidth:2.5,pointRadius:2,pointHoverRadius:5,tension:0.1},
+    {label:'EB2 表B Filing',data:EB2FI,borderColor:'#93c5fd',backgroundColor:'transparent',borderWidth:2,borderDash:[5,3],pointRadius:2,pointHoverRadius:5,tension:0.1},
+    {label:'EB3 表A Final',data:EB3FA,borderColor:'#059669',backgroundColor:'transparent',borderWidth:2.5,pointRadius:2,pointHoverRadius:5,tension:0.1},
+    {label:'EB3 表B Filing',data:EB3FI,borderColor:'#6ee7b7',backgroundColor:'transparent',borderWidth:2,borderDash:[5,3],pointRadius:2,pointHoverRadius:5,tension:0.1},
+    {label:'目标：2023年5月',data:tgt('2022-10','2026-09'),borderColor:'#dc2626',backgroundColor:'transparent',borderWidth:1.5,borderDash:[3,3],pointRadius:0,tension:0}
   ]},
-  options:opts(24,72,'2026-09')
+  options:opts(0,72,'2026-09')
 });
 </script>
 </body>
