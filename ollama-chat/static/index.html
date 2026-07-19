@@ -20,22 +20,30 @@
      reach only ~56% — CJK text looked ~1.6x bigger. These faces wrap the
      usual system CJK fonts with size-adjust so their glyphs match
      VT323's visual height. unicode-range keeps latin on VT323. */
+  /* The 90s bitmap-era fonts (NSimSun/SimSun, GulimChe, MS Gothic) are
+     listed first: at small sizes they render from embedded bitmap
+     strikes — aliased, pixelated, period-correct next to VT323. Their
+     strikes exist only at integer ppem (~12-16px), so size-adjust is
+     tuned to land 19px body text on exactly 14px. Modern fonts follow
+     as fallback for systems without them. */
   @font-face { /* Han ideographs, kana, CJK punctuation, fullwidth forms */
     font-family: "CJK719";
-    src: local("Microsoft YaHei"), local("PingFang SC"),
+    src: local("NSimSun"), local("SimSun"), local("MS Gothic"),
+         local("Microsoft YaHei"), local("PingFang SC"),
          local("Hiragino Sans GB"), local("Noto Sans CJK SC"),
          local("WenQuanYi Micro Hei"), local("WenQuanYi Zen Hei"),
          local("IPAPGothic"), local("IPAGothic");
-    size-adjust: 70%;
+    size-adjust: 73.7%;
     unicode-range: U+2E80-303F, U+3040-30FF, U+31C0-4DBF, U+4E00-9FFF,
                    U+F900-FAFF, U+FE30-FE4F, U+FF00-FFEF, U+20000-2FA1F;
   }
   @font-face { /* Hangul */
     font-family: "CJK719";
-    src: local("Malgun Gothic"), local("Apple SD Gothic Neo"),
+    src: local("GulimChe"), local("DotumChe"),
+         local("Malgun Gothic"), local("Apple SD Gothic Neo"),
          local("Noto Sans CJK KR"), local("Noto Sans KR"), local("NanumGothic"),
          local("WenQuanYi Zen Hei");
-    size-adjust: 70%;
+    size-adjust: 73.7%;
     unicode-range: U+1100-11FF, U+3130-318F, U+A960-A97F, U+AC00-D7FF;
   }
 
