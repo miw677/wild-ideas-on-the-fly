@@ -19,6 +19,10 @@ no API keys, no cloud, no npm install. Just Python 3 and a browser.
 - ⌨️ [VT323](https://fonts.google.com/specimen/VT323) — a recreation of
   the DEC VT320 terminal font — embedded in the page as base64 (OFL
   license), so the app needs no network access for anything
+- 🈶 CJK text renders in [Fusion Pixel](https://github.com/TakWolf/fusion-pixel-font)
+  (OFL), a bitmap-style Chinese/Japanese/Korean font that matches
+  VT323's pixel look; served locally and fetched only when CJK
+  characters appear, with size-adjusted system fonts as fallback
 - ♿ All CRT motion effects respect `prefers-reduced-motion`
 
 ## Built for small local models

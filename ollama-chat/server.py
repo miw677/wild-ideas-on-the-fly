@@ -37,6 +37,8 @@ class ChatHandler(BaseHTTPRequestHandler):
             self._proxy("GET", path)
         elif path in ("/", "/index.html"):
             self._serve_file("index.html", "text/html; charset=utf-8")
+        elif path == "/cjk-pixel.woff2":
+            self._serve_file("cjk-pixel.woff2", "font/woff2")
         else:
             self._send_error(404, "not found")
 
