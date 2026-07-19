@@ -1,6 +1,6 @@
-# Ollama Chat
+# Terminal 719
 
-A minimal, dependency-free chatbot web interface for a locally running
+A retro CRT-terminal chatbot web interface for a locally running
 [Ollama](https://ollama.com) instance. Everything runs on your machine —
 no API keys, no cloud, no npm install. Just Python 3 and a browser.
 
@@ -14,7 +14,12 @@ no API keys, no cloud, no npm install. Just Python 3 and a browser.
 - ⚙️ Settings panel — system prompt, temperature, memory length
 - ⏹ Stop button — abort a generation mid-stream
 - 📊 Per-reply stats — elapsed time and true generation tokens/sec
-- 🌙 Dark UI, code-block rendering, Enter-to-send
+- 🖥 Old-school CRT look: green phosphor glow, scanlines, screen
+  flicker/jitter, a slow roll bar, and an ASCII-art boot screen
+- ⌨️ [VT323](https://fonts.google.com/specimen/VT323) — a recreation of
+  the DEC VT320 terminal font — embedded in the page as base64 (OFL
+  license), so the app needs no network access for anything
+- ♿ All CRT motion effects respect `prefers-reduced-motion`
 
 ## Built for small local models
 
