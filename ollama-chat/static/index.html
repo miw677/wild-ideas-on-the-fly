@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ollama Chat</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦙</text></svg>">
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #181b24;
+    --panel-2: #1f2330;
+    --border: #2a2f3e;
+    --text: #e6e8ee;
+    --text-dim: #9aa1b2;
+    --accent: #6c8cff;
+    --accent-soft: rgba(108, 140, 255, 0.14);
+    --user-bubble: #2b3550;
+    --danger: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--danger);
+    transition: background 0.3s;
+  }
+  .dot.online { background: #4cd97b; }
+  header select {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    max-width: 220px;
+  }
+  header .spacer { flex: 1; }
+  header button {
+    background: var(--panel-2);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  header button:hover { color: var(--text); border-color: var(--accent); }
+
+  #settings {
+    display: none;
+    padding: 12px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+  }
+  #settings.open { display: block; }
+  #settings label {
+    display: block;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  #settings textarea {
+    width: 100%;
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 44px;
+  }
+  #settings .row {
+    display: flex;
+    gap: 16px;
+    margin-top: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  #settings input[type="range"] { accent-color: var(--accent); }
+  #settings .row span { font-size: 12px; color: var(--text-dim); }
+
+  #chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 0 12px;
+  }
+  .inner {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 0 16px;
+  }
+  .msg {
+    display: flex;
+    margin-bottom: 14px;
+  }
+  .msg .bubble {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 14.5px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+  }
+  .msg.user { justify-content: flex-end; }
+  .msg.user .bubble {
+    background: var(--user-bubble);
+    border-bottom-right-radius: 4px;
+  }
+  .msg.assistant .bubble {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .msg.assistant .bubble.thinking::after {
+    content: "▍";
+    animation: blink 1s step-start infinite;
+    color: var(--accent);
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .bubble code {
+    background: rgba(0,0,0,0.35);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .bubble pre {
+    background: #0b0d12;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .bubble pre code { background: none; padding: 0; }
+  .meta {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin: -8px 0 14px 6px;
+  }
+  .msg.user + .meta { text-align: right; margin-right: 6px; }
+  .error-note {
+    color: var(--danger);
+    font-size: 13px;
+    text-align: center;
+    margin: 8px 0;
+  }
+  #empty {
+    text-align: center;
+    color: var(--text-dim);
+    margin-top: 12vh;
+    font-size: 14px;
+  }
+  #empty .big { font-size: 40px; margin-bottom: 12px; }
+
+  footer {
+    padding: 12px 16px 16px;
+    background: var(--bg);
+  }
+  .composer {
+    max-width: 780px;
+    margin: 0 auto;
+    display: flex;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 8px;
+  }
+  .composer:focus-within { border-color: var(--accent); }
+  .composer textarea {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 14.5px;
+    font-family: inherit;
+    resize: none;
+    max-height: 160px;
+    padding: 6px 8px;
+    line-height: 1.4;
+  }
+  .composer button {
+    align-self: flex-end;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .composer button:disabled { background: var(--border); cursor: not-allowed; }
+  .composer button.stop { background: var(--danger); }
+  .hint {
+    max-width: 780px;
+    margin: 6px auto 0;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="dot" id="statusDot"></span> Ollama Chat</h1>
+  <select id="modelSelect" title="Model"><option>loading…</option></select>
+  <div class="spacer"></div>
+  <button id="settingsBtn">⚙ Settings</button>
+  <button id="clearBtn">🗑 New chat</button>
+</header>
+
+<div id="settings">
+  <label for="systemPrompt">System prompt (optional)</label>
+  <textarea id="systemPrompt" placeholder="e.g. You are a concise, helpful assistant."></textarea>
+  <div class="row">
+    <span>Temperature: <b id="tempVal">0.7</b></span>
+    <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7">
+  </div>
+</div>
+
+<div id="chat">
+  <div class="inner" id="messages">
+    <div id="empty">
+      <div class="big">🦙</div>
+      Chat with your local model — everything stays on your machine.
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="composer">
+    <textarea id="input" rows="1" placeholder="Send a message…"></textarea>
+    <button id="sendBtn" disabled>Send</button>
+  </div>
+  <div class="hint">Enter to send · Shift+Enter for a new line</div>
+</footer>
+
+<script>
+"use strict";
+
+const el = (id) => document.getElementById(id);
+const messagesEl = el("messages");
+const chatEl = el("chat");
+const inputEl = el("input");
+const sendBtn = el("sendBtn");
+const modelSelect = el("modelSelect");
+const statusDot = el("statusDot");
+
+let history = [];          // [{role, content}]
+let controller = null;     // AbortController while generating
+
+// ---- model list / status -------------------------------------------------
+
+async function loadModels() {
+  try {
+    const res = await fetch("/api/tags");
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    const models = (data.models || []).map((m) => m.name);
+    modelSelect.innerHTML = "";
+    if (models.length === 0) {
+      modelSelect.innerHTML = "<option>no models — run: ollama pull llama3.2</option>";
+      statusDot.classList.add("online");
+      return;
+    }
+    for (const name of models) {
+      const opt = document.createElement("option");
+      opt.value = opt.textContent = name;
+      modelSelect.appendChild(opt);
+    }
+    const saved = localStorage.getItem("ollama-chat-model");
+    if (saved && models.includes(saved)) modelSelect.value = saved;
+    statusDot.classList.add("online");
+    sendBtn.disabled = inputEl.value.trim() === "";
+  } catch (err) {
+    statusDot.classList.remove("online");
+    modelSelect.innerHTML = "<option>Ollama not reachable</option>";
+    setTimeout(loadModels, 3000); // keep retrying until Ollama shows up
+  }
+}
+modelSelect.addEventListener("change", () =>
+  localStorage.setItem("ollama-chat-model", modelSelect.value)
+);
+
+// ---- rendering -----------------------------------------------------------
+
+// Minimal safe rendering: escape everything, then re-introduce code blocks.
+function renderContent(bubble, text) {
+  bubble.textContent = "";
+  const parts = text.split(/```/);
+  for (let i = 0; i < parts.length; i++) {
+    if (i % 2 === 1) {
+      const pre = document.createElement("pre");
+      const code = document.createElement("code");
+      // Drop a leading language tag line, e.g. ```python
+      code.textContent = parts[i].replace(/^[\w+-]*\n/, "");
+      pre.appendChild(code);
+      bubble.appendChild(pre);
+    } else if (parts[i]) {
+      const frag = document.createDocumentFragment();
+      const inline = parts[i].split(/`([^`\n]+)`/);
+      for (let j = 0; j < inline.length; j++) {
+        if (j % 2 === 1) {
+          const c = document.createElement("code");
+          c.textContent = inline[j];
+          frag.appendChild(c);
+        } else if (inline[j]) {
+          frag.appendChild(document.createTextNode(inline[j]));
+        }
+      }
+      bubble.appendChild(frag);
+    }
+  }
+}
+
+function addMessage(role, text) {
+  const empty = el("empty");
+  if (empty) empty.remove();
+  const wrap = document.createElement("div");
+  wrap.className = "msg " + role;
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  renderContent(bubble, text);
+  wrap.appendChild(bubble);
+  messagesEl.appendChild(wrap);
+  scrollToBottom();
+  return bubble;
+}
+
+function addError(text) {
+  const div = document.createElement("div");
+  div.className = "error-note";
+  div.textContent = text;
+  messagesEl.appendChild(div);
+  scrollToBottom();
+}
+
+function scrollToBottom() {
+  chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+// ---- chat ----------------------------------------------------------------
+
+async function send() {
+  if (controller) { // acting as Stop button
+    controller.abort();
+    return;
+  }
+  const text = inputEl.value.trim();
+  if (!text || !modelSelect.value || modelSelect.value.includes(" ")) return;
+
+  inputEl.value = "";
+  autoResize();
+  addMessage("user", text);
+  history.push({ role: "user", content: text });
+
+  const bubble = addMessage("assistant", "");
+  bubble.classList.add("thinking");
+  sendBtn.textContent = "Stop";
+  sendBtn.classList.add("stop");
+  sendBtn.disabled = false;
+
+  const messages = [];
+  const system = el("systemPrompt").value.trim();
+  if (system) messages.push({ role: "system", content: system });
+  messages.push(...history);
+
+  controller = new AbortController();
+  let reply = "";
+  const started = performance.now();
+  let tokens = 0;
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: modelSelect.value,
+        messages,
+        stream: true,
+        options: { temperature: parseFloat(el("temperature").value) },
+      }),
+    });
+    if (!res.ok) {
+      let msg = "HTTP " + res.status;
+      try { msg = (await res.json()).error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+
+    // Ollama streams newline-delimited JSON objects.
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop(); // keep incomplete tail
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        const obj = JSON.parse(line);
+        if (obj.error) throw new Error(obj.error);
+        if (obj.message && obj.message.content) {
+          reply += obj.message.content;
+          tokens += 1;
+          renderContent(bubble, reply);
+          scrollToBottom();
+        }
+      }
+    }
+    history.push({ role: "assistant", content: reply });
+    const secs = (performance.now() - started) / 1000;
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = `${modelSelect.value} · ${secs.toFixed(1)}s · ~${(tokens / secs).toFixed(1)} tok/s`;
+    messagesEl.appendChild(meta);
+  } catch (err) {
+    if (err.name === "AbortError") {
+      if (reply) history.push({ role: "assistant", content: reply });
+      else bubble.parentElement.remove();
+    } else {
+      bubble.parentElement.remove();
+      history.pop(); // let the user retry the same question
+      inputEl.value = text;
+      addError("⚠ " + err.message);
+      loadModels();
+    }
+  } finally {
+    bubble.classList.remove("thinking");
+    controller = null;
+    sendBtn.textContent = "Send";
+    sendBtn.classList.remove("stop");
+    sendBtn.disabled = inputEl.value.trim() === "";
+    scrollToBottom();
+    inputEl.focus();
+  }
+}
+
+// ---- UI wiring -------------------------------------------------------------
+
+function autoResize() {
+  inputEl.style.height = "auto";
+  inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + "px";
+}
+
+inputEl.addEventListener("input", () => {
+  autoResize();
+  if (!controller) sendBtn.disabled = inputEl.value.trim() === "";
+});
+inputEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    if (!sendBtn.disabled || controller) send();
+  }
+});
+sendBtn.addEventListener("click", send);
+
+el("settingsBtn").addEventListener("click", () =>
+  el("settings").classList.toggle("open")
+);
+el("temperature").addEventListener("input", (e) =>
+  (el("tempVal").textContent = e.target.value)
+);
+el("clearBtn").addEventListener("click", () => {
+  history = [];
+  messagesEl.innerHTML =
+    '<div id="empty"><div class="big">🦙</div>Chat with your local model — everything stays on your machine.</div>';
+  inputEl.focus();
+});
+
+loadModels();
+inputEl.focus();
+</script>
+</body>
+</html>
