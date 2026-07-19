@@ -249,6 +249,9 @@
   <div class="row">
     <span>Temperature: <b id="tempVal">0.7</b></span>
     <input type="range" id="temperature" min="0" max="2" step="0.1" value="0.7">
+    <span title="How many past turns are re-sent to the model. Lower = faster prefill on small models.">
+      Memory: last <b id="memVal">8</b> turns</span>
+    <input type="range" id="memory" min="1" max="20" step="1" value="8">
   </div>
 </div>
 
@@ -282,8 +285,39 @@ const statusDot = el("statusDot");
 
 let history = [];          // [{role, content}]
 let controller = null;     // AbortController while generating
+let modelCanThink = false; // whether the selected model supports thinking
+
+const KEEP_ALIVE = "30m";  // keep the model loaded between messages
 
 // ---- model list / status -------------------------------------------------
+
+// Preload the model into memory so the first reply doesn't pay the
+// load cost, and check whether it supports thinking (so we can turn
+// thinking off — sending think:false to a non-thinking model errors).
+async function prepareModel() {
+  const model = modelSelect.value;
+  if (!model || model.includes(" ")) return;
+  modelCanThink = false;
+  try {
+    const res = await fetch("/api/show", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model }),
+    });
+    if (res.ok) {
+      const info = await res.json();
+      modelCanThink = (info.capabilities || []).includes("thinking");
+    }
+  } catch (_) {}
+  try {
+    // An empty messages array makes Ollama load the model and return.
+    await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model, messages: [], keep_alive: KEEP_ALIVE }),
+    });
+  } catch (_) {}
+}
 
 async function loadModels() {
   try {
@@ -306,15 +340,17 @@ async function loadModels() {
     if (saved && models.includes(saved)) modelSelect.value = saved;
     statusDot.classList.add("online");
     sendBtn.disabled = inputEl.value.trim() === "";
+    prepareModel();
   } catch (err) {
     statusDot.classList.remove("online");
     modelSelect.innerHTML = "<option>Ollama not reachable</option>";
     setTimeout(loadModels, 3000); // keep retrying until Ollama shows up
   }
 }
-modelSelect.addEventListener("change", () =>
-  localStorage.setItem("ollama-chat-model", modelSelect.value)
-);
+modelSelect.addEventListener("change", () => {
+  localStorage.setItem("ollama-chat-model", modelSelect.value);
+  prepareModel();
+});
 
 // ---- rendering -----------------------------------------------------------
 
@@ -397,24 +433,45 @@ async function send() {
   const messages = [];
   const system = el("systemPrompt").value.trim();
   if (system) messages.push({ role: "system", content: system });
-  messages.push(...history);
+  // Only re-send the last N turns — resending the whole history makes
+  // prompt processing slower every turn on small local models.
+  const memTurns = parseInt(el("memory").value, 10);
+  messages.push(...history.slice(-(memTurns * 2)));
 
   controller = new AbortController();
   let reply = "";
   const started = performance.now();
   let tokens = 0;
+  let evalCount = 0;
+  let evalNanos = 0;
+
+  // Repaint at most once per frame; per-token repaints throttle the
+  // stream when a small model emits tokens faster than 60 fps.
+  let renderQueued = false;
+  const queueRender = () => {
+    if (renderQueued) return;
+    renderQueued = true;
+    requestAnimationFrame(() => {
+      renderQueued = false;
+      renderContent(bubble, reply);
+      scrollToBottom();
+    });
+  };
 
   try {
+    const body = {
+      model: modelSelect.value,
+      messages,
+      stream: true,
+      keep_alive: KEEP_ALIVE,
+      options: { temperature: parseFloat(el("temperature").value) },
+    };
+    if (modelCanThink) body.think = false;
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       signal: controller.signal,
-      body: JSON.stringify({
-        model: modelSelect.value,
-        messages,
-        stream: true,
-        options: { temperature: parseFloat(el("temperature").value) },
-      }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) {
       let msg = "HTTP " + res.status;
@@ -439,16 +496,24 @@ async function send() {
         if (obj.message && obj.message.content) {
           reply += obj.message.content;
           tokens += 1;
-          renderContent(bubble, reply);
-          scrollToBottom();
+          queueRender();
+        }
+        if (obj.done) {
+          evalCount = obj.eval_count || 0;
+          evalNanos = obj.eval_duration || 0;
         }
       }
     }
+    renderContent(bubble, reply);
     history.push({ role: "assistant", content: reply });
     const secs = (performance.now() - started) / 1000;
+    // Prefer Ollama's own generation stats; fall back to wall clock.
+    const tokPerSec = evalNanos > 0
+      ? (evalCount / (evalNanos / 1e9))
+      : (tokens / secs);
     const meta = document.createElement("div");
     meta.className = "meta";
-    meta.textContent = `${modelSelect.value} · ${secs.toFixed(1)}s · ~${(tokens / secs).toFixed(1)} tok/s`;
+    meta.textContent = `${modelSelect.value} · ${secs.toFixed(1)}s · ${tokPerSec.toFixed(1)} tok/s`;
     messagesEl.appendChild(meta);
   } catch (err) {
     if (err.name === "AbortError") {
@@ -497,6 +562,17 @@ el("settingsBtn").addEventListener("click", () =>
 el("temperature").addEventListener("input", (e) =>
   (el("tempVal").textContent = e.target.value)
 );
+el("memory").addEventListener("input", (e) => {
+  el("memVal").textContent = e.target.value;
+  localStorage.setItem("ollama-chat-memory", e.target.value);
+});
+{
+  const savedMem = localStorage.getItem("ollama-chat-memory");
+  if (savedMem) {
+    el("memory").value = savedMem;
+    el("memVal").textContent = savedMem;
+  }
+}
 el("clearBtn").addEventListener("click", () => {
   history = [];
   messagesEl.innerHTML =

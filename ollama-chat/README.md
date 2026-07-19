@@ -10,11 +10,31 @@ no API keys, no cloud, no npm install. Just Python 3 and a browser.
 
 - 💬 Streaming responses — tokens appear as the model generates them
 - 🔄 Model picker — switches between any model you've pulled (`ollama list`)
-- 🧠 Multi-turn conversations — full chat history is sent each turn
-- ⚙️ Settings panel — system prompt and temperature
+- 🧠 Multi-turn conversations with a bounded memory window
+- ⚙️ Settings panel — system prompt, temperature, memory length
 - ⏹ Stop button — abort a generation mid-stream
-- 📊 Per-reply stats — elapsed time and tokens/sec
+- 📊 Per-reply stats — elapsed time and true generation tokens/sec
 - 🌙 Dark UI, code-block rendering, Enter-to-send
+
+## Built for small local models
+
+The request sent to Ollama is as barebones as it gets — just the user
+messages (plus your system prompt, only if you set one). No tools, no
+extra context. On top of that:
+
+- **Warm start** — the model is preloaded the moment you open the page
+  or switch models, and `keep_alive: 30m` keeps it in memory between
+  messages, so replies start without the model-load pause.
+- **Thinking disabled** — for models that support reasoning/thinking,
+  `think: false` is sent so they answer immediately (checked per model
+  via `/api/show`; models without the capability are left alone).
+- **Bounded memory** — only the last N turns (default 8, adjustable in
+  Settings) are re-sent each message. Prompt processing is the slow part
+  on CPU, and it grows with history length — capping it keeps later
+  turns as fast as the first.
+- **Frame-batched rendering** — the UI repaints at most once per frame
+  during streaming, so a fast token stream is never throttled by DOM
+  work.
 
 ## Requirements
 
