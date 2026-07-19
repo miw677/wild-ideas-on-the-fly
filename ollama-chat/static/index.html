@@ -292,8 +292,14 @@
     color: var(--phos-bright);
     padding: 4px 0 6px;
   }
+  .inputwrap {
+    position: relative;
+    flex: 1;
+    display: flex;
+  }
   .composer textarea {
     flex: 1;
+    width: 100%;
     background: none;
     border: none;
     outline: none;
@@ -303,7 +309,32 @@
     resize: none;
     max-height: 160px;
     padding: 4px 6px 6px;
-    caret-color: var(--phos-bright);
+    caret-color: transparent; /* replaced by the block cursor below */
+  }
+  /* Invisible copy of the textarea's text up to the caret; the block
+     cursor rides at its end, so it lands exactly where the real caret
+     is — including wrapped lines and scrolling. */
+  #caretMirror {
+    position: absolute;
+    inset: 0;
+    padding: 4px 6px 6px;      /* must match the textarea */
+    font: inherit;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow: hidden;
+    pointer-events: none;
+    color: transparent;
+    text-shadow: none;
+  }
+  #fakeCaret {
+    visibility: hidden;
+    color: var(--phos-bright);
+    text-shadow: var(--glow);
+    margin-left: -0.08em;      /* tuck against the preceding character */
+  }
+  #caretMirror.focused #fakeCaret {
+    visibility: visible;
+    animation: blink 1s step-start infinite;
   }
   .composer textarea::placeholder { color: var(--phos-dim); opacity: 0.7; }
   .composer button {
@@ -377,7 +408,10 @@
 
 <footer>
   <div class="composer">
-    <textarea id="input" rows="1" placeholder="ENTER COMMAND…"></textarea>
+    <div class="inputwrap">
+      <textarea id="input" rows="1" placeholder="ENTER COMMAND…"></textarea>
+      <div id="caretMirror" aria-hidden="true"><span id="mirrorText"></span><span id="fakeCaret">█</span></div>
+    </div>
     <button id="sendBtn" disabled>XMIT</button>
   </div>
   <div class="hint">ENTER TO TRANSMIT · SHIFT+ENTER FOR NEW LINE</div>
@@ -673,7 +707,23 @@ async function send() {
 function autoResize() {
   inputEl.style.height = "auto";
   inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + "px";
+  updateCaret();
 }
+
+// Keep the fake block cursor glued to the real (hidden) caret.
+const caretMirror = el("caretMirror");
+const mirrorText = el("mirrorText");
+function updateCaret() {
+  const pos = inputEl.selectionStart ?? inputEl.value.length;
+  mirrorText.textContent = inputEl.value.slice(0, pos);
+  caretMirror.scrollTop = inputEl.scrollTop;
+}
+for (const ev of ["keyup", "click", "select", "focus"]) {
+  inputEl.addEventListener(ev, updateCaret);
+}
+inputEl.addEventListener("scroll", () => (caretMirror.scrollTop = inputEl.scrollTop));
+inputEl.addEventListener("focus", () => caretMirror.classList.add("focused"));
+inputEl.addEventListener("blur", () => caretMirror.classList.remove("focused"));
 
 inputEl.addEventListener("input", () => {
   autoResize();
