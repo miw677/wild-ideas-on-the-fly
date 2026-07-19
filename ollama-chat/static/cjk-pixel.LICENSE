@@ -1,3 +1,12 @@
+MODIFICATION NOTICE (Terminal 719)
+----------------------------------
+This build is modified from the original 'Fusion Pixel 12px Monospaced SC'
+font: all glyph outlines are translated +200 units (2 design pixels)
+vertically so CJK glyphs sit on the latin baseline next to VT323, and the
+internal font name is changed to 'CJK719 Pixel' in accordance with the
+SIL OFL's Reserved Font Name requirement. Original font:
+https://github.com/TakWolf/fusion-pixel-font
+
 Copyright (c) 2022, TakWolf (https://takwolf.com),
 with Reserved Font Name 'Fusion Pixel'.
 
