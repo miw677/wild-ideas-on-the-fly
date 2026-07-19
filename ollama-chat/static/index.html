@@ -267,11 +267,17 @@
     content: "719: ";
     color: var(--phos-dim);
   }
-  .msg.assistant .bubble.thinking::after {
+  .msg.assistant .bubble.thinking:empty::after,
+  .msg.assistant .bubble.thinking > :last-child::after {
     content: "█";
     animation: blink 1s step-start infinite;
   }
   @keyframes blink { 50% { opacity: 0; } }
+  .bubble code, .bubble pre {
+    /* defeat the UA stylesheet's default monospace font on <code> */
+    font-family: inherit;
+    font-size: inherit;
+  }
   .bubble code {
     color: var(--phos-bright);
     background: rgba(51, 255, 51, 0.07);
@@ -286,6 +292,31 @@
     margin: 8px 0;
   }
   .bubble pre code { background: none; padding: 0; color: var(--phos); }
+
+  /* TUI-style markdown: structure expressed with phosphor brightness,
+     underlines and box-drawing only — the type never leaves the grid. */
+  .mdl { min-height: 1.35em; white-space: pre-wrap; }
+  .md-b { color: var(--phos-bright); }
+  .md-i { text-decoration: underline; text-underline-offset: 2px; }
+  .md-h { color: var(--phos-bright); margin-top: 4px; }
+  .md-h::before { content: "▌ "; color: var(--phos-dim); }
+  .md-h.major {
+    border-bottom: 1px solid var(--phos-faint);
+    padding-bottom: 2px;
+    margin-bottom: 4px;
+  }
+  .md-hr {
+    min-height: 0;
+    height: 0;
+    border-bottom: 1px solid var(--phos-faint);
+    margin: 0.65em 0;
+  }
+  .md-li { padding-left: 2ch; text-indent: -2ch; }
+  .md-q {
+    border-left: 3px solid var(--phos-faint);
+    padding-left: 1ch;
+    color: var(--phos-dim);
+  }
   .meta {
     font-size: 16px;
     color: var(--phos-dim);
@@ -434,6 +465,8 @@
     <span title="How many past turns are re-sent to the model. Lower = faster prefill on small models.">
       MEMORY <b id="memVal">8</b> TURNS</span>
     <input type="range" id="memory" min="1" max="20" step="1" value="8">
+    <span title="Render markdown in replies TUI-style (brightness, underline, rules). Off = raw text.">
+      <input type="checkbox" id="mdToggle" checked style="accent-color: var(--phos)"> MARKDOWN</span>
   </div>
 </div>
 
@@ -554,8 +587,93 @@ modelSelect.addEventListener("change", () => {
 
 // ---- rendering -----------------------------------------------------------
 
-// Minimal safe rendering: escape everything, then re-introduce code blocks.
-function renderContent(bubble, text) {
+// All rendering builds DOM nodes with textContent — never innerHTML —
+// so model output can't inject markup. Everything unrecognized (tables,
+// links, LaTeX) is left verbatim: raw text beats mangled formatting.
+
+// *italic* spans (underlined — terminals had no italics, but had underline)
+function renderItalic(target, s) {
+  const parts = s.split(/\*([^*\n]+)\*/);
+  for (let i = 0; i < parts.length; i++) {
+    if (!parts[i]) continue;
+    if (i % 2 === 1) {
+      const span = document.createElement("span");
+      span.className = "md-i";
+      span.textContent = parts[i];
+      target.appendChild(span);
+    } else {
+      target.appendChild(document.createTextNode(parts[i]));
+    }
+  }
+}
+
+// **bold** spans (hotter phosphor), then italics inside the remainder
+function renderEmphasis(target, s) {
+  const parts = s.split(/\*\*([^*]+)\*\*/);
+  for (let i = 0; i < parts.length; i++) {
+    if (!parts[i]) continue;
+    if (i % 2 === 1) {
+      const span = document.createElement("span");
+      span.className = "md-b";
+      renderItalic(span, parts[i]);
+      target.appendChild(span);
+    } else {
+      renderItalic(target, parts[i]);
+    }
+  }
+}
+
+// `inline code` first (exempt from emphasis parsing), then emphasis
+function renderInline(target, s, md) {
+  const parts = s.split(/`([^`\n]+)`/);
+  for (let i = 0; i < parts.length; i++) {
+    if (!parts[i]) continue;
+    if (i % 2 === 1) {
+      const c = document.createElement("code");
+      c.textContent = parts[i];
+      target.appendChild(c);
+    } else if (md) {
+      renderEmphasis(target, parts[i]);
+    } else {
+      target.appendChild(document.createTextNode(parts[i]));
+    }
+  }
+}
+
+// Line-based TUI markdown: headings, rules, lists, quotes — expressed
+// with brightness, underline and box-drawing, never leaving the grid.
+function renderMarkdown(container, s) {
+  const lines = s.split("\n");
+  if (lines.length && lines[lines.length - 1] === "") lines.pop();
+  for (const line of lines) {
+    const div = document.createElement("div");
+    div.className = "mdl";
+    let m;
+    if ((m = line.match(/^(#{1,6})\s+(.*)$/))) {
+      div.classList.add("md-h");
+      if (m[1].length <= 2) div.classList.add("major");
+      renderInline(div, m[2], true);
+    } else if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
+      div.classList.add("md-hr");
+    } else if ((m = line.match(/^(\s*)[-*+]\s+(.*)$/))) {
+      div.classList.add("md-li");
+      div.style.marginLeft = Math.min(m[1].length, 8) + "ch";
+      renderInline(div, "· " + m[2], true);
+    } else if ((m = line.match(/^(\s*)(\d+[.)])\s+(.*)$/))) {
+      div.classList.add("md-li");
+      div.style.marginLeft = Math.min(m[1].length, 8) + "ch";
+      renderInline(div, m[2] + " " + m[3], true);
+    } else if ((m = line.match(/^\s*>\s?(.*)$/))) {
+      div.classList.add("md-q");
+      renderInline(div, m[1], true);
+    } else {
+      renderInline(div, line, true);
+    }
+    container.appendChild(div);
+  }
+}
+
+function renderContent(bubble, text, md) {
   bubble.textContent = "";
   const parts = text.split(/```/);
   for (let i = 0; i < parts.length; i++) {
@@ -567,20 +685,14 @@ function renderContent(bubble, text) {
       pre.appendChild(code);
       bubble.appendChild(pre);
     } else if (parts[i]) {
-      const frag = document.createDocumentFragment();
-      const inline = parts[i].split(/`([^`\n]+)`/);
-      for (let j = 0; j < inline.length; j++) {
-        if (j % 2 === 1) {
-          const c = document.createElement("code");
-          c.textContent = inline[j];
-          frag.appendChild(c);
-        } else if (inline[j]) {
-          frag.appendChild(document.createTextNode(inline[j]));
-        }
-      }
-      bubble.appendChild(frag);
+      if (md) renderMarkdown(bubble, parts[i]);
+      else renderInline(bubble, parts[i], false);
     }
   }
+}
+
+function mdOn() {
+  return el("mdToggle").checked;
 }
 
 function addMessage(role, text) {
@@ -590,7 +702,8 @@ function addMessage(role, text) {
   wrap.className = "msg " + role;
   const bubble = document.createElement("div");
   bubble.className = "bubble";
-  renderContent(bubble, text);
+  renderContent(bubble, text, role === "assistant" && mdOn());
+  if (role === "assistant") bubble._raw = text;
   wrap.appendChild(bubble);
   messagesEl.appendChild(wrap);
   scrollToBottom();
@@ -653,7 +766,7 @@ async function send() {
     renderQueued = true;
     requestAnimationFrame(() => {
       renderQueued = false;
-      renderContent(bubble, reply);
+      renderContent(bubble, reply, mdOn());
       scrollToBottom();
     });
   };
@@ -704,7 +817,8 @@ async function send() {
         }
       }
     }
-    renderContent(bubble, reply);
+    renderContent(bubble, reply, mdOn());
+    bubble._raw = reply;
     history.push({ role: "assistant", content: reply });
     const secs = (performance.now() - started) / 1000;
     // Prefer Ollama's own generation stats; fall back to wall clock.
@@ -717,8 +831,12 @@ async function send() {
     messagesEl.appendChild(meta);
   } catch (err) {
     if (err.name === "AbortError") {
-      if (reply) history.push({ role: "assistant", content: reply });
-      else bubble.parentElement.remove();
+      if (reply) {
+        bubble._raw = reply;
+        history.push({ role: "assistant", content: reply });
+      } else {
+        bubble.parentElement.remove();
+      }
     } else {
       bubble.parentElement.remove();
       history.pop(); // let the user retry the same question
@@ -788,7 +906,17 @@ el("memory").addEventListener("input", (e) => {
     el("memory").value = savedMem;
     el("memVal").textContent = savedMem;
   }
+  if (localStorage.getItem("ollama-chat-md") === "0") el("mdToggle").checked = false;
 }
+el("mdToggle").addEventListener("change", () => {
+  localStorage.setItem("ollama-chat-md", mdOn() ? "1" : "0");
+  // Re-render the whole transcript in the new mode.
+  for (const b of document.querySelectorAll(".msg.assistant .bubble")) {
+    if (b._raw !== undefined && !b.classList.contains("thinking")) {
+      renderContent(b, b._raw, mdOn());
+    }
+  }
+});
 el("clearBtn").addEventListener("click", () => {
   history = [];
   messagesEl.innerHTML = BOOT_SCREEN;

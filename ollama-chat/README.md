@@ -9,6 +9,9 @@ no API keys, no cloud, no npm install. Just Python 3 and a browser.
 ## Features
 
 - 💬 Streaming responses — tokens appear as the model generates them
+- 📝 TUI-style markdown: headings, bold/italic, lists, quotes and rules
+  rendered with phosphor brightness, underline and box-drawing — the
+  type never leaves the terminal grid (toggle in settings)
 - 🔄 Model picker — switches between any model you've pulled (`ollama list`)
 - 🧠 Multi-turn conversations with a bounded memory window
 - ⚙️ Settings panel — system prompt, temperature, memory length
