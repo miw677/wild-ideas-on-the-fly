@@ -296,6 +296,9 @@
   /* TUI-style markdown: structure expressed with phosphor brightness,
      underlines and box-drawing only — the type never leaves the grid. */
   .mdl { min-height: 1.35em; white-space: pre-wrap; }
+  /* Let the first rendered line flow on the same line as the inline
+     "719: " ::before prefix instead of breaking below it. */
+  .msg.assistant .bubble > .mdl:first-child { display: inline; }
   .md-b { color: var(--phos-bright); }
   .md-i { text-decoration: underline; text-underline-offset: 2px; }
   .md-h { color: var(--phos-bright); margin-top: 4px; }
