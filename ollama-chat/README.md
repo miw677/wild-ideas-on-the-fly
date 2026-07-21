@@ -26,6 +26,10 @@ no API keys, no cloud, no npm install. Just Python 3 and a browser.
   (OFL), a bitmap-style Chinese/Japanese/Korean font that matches
   VT323's pixel look; served locally and fetched only when CJK
   characters appear, with size-adjusted system fonts as fallback
+- 🔢 Names itself after today's date (7/21 → TERMINAL 721): boots under
+  its original designation 719, then two seconds in, Matrix-style
+  decodes the logo, header and tab title to the current date
+  (`?n=NNNN` in the URL forces a specific number)
 - ♿ All CRT motion effects respect `prefers-reduced-motion`
 
 ## Built for small local models

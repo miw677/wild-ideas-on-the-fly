@@ -452,7 +452,7 @@
 <div id="rollbar"></div>
 
 <header>
-  <h1><span class="dot" id="statusDot"></span>TERMINAL 719</h1>
+  <h1><span class="dot" id="statusDot"></span><span id="brand">TERMINAL 719</span></h1>
   <select id="modelSelect" title="Model"><option>SCANNING…</option></select>
   <div class="spacer"></div>
   <button id="settingsBtn">[CONFIG]</button>
@@ -500,22 +500,73 @@ const sendBtn = el("sendBtn");
 const modelSelect = el("modelSelect");
 const statusDot = el("statusDot");
 
-const BOOT_SCREEN = [
-  '<div id="empty"><span class="logo">',
-  " _______ ______ _____  __  __ _____ _   _          _        ______ __  ___",
-  "|__   __|  ____|  __ \\|  \\/  |_   _| \\ | |   /\\   | |      |____  /_ |/ _ \\",
-  "   | |  | |__  | |__) | \\  / | | | |  \\| |  /  \\  | |          / / | | (_) |",
-  "   | |  |  __| |  _  /| |\\/| | | | | . ` | / /\\ \\ | |         / /  | |\\__, |",
-  "   | |  | |____| | \\ \\| |  | |_| |_| |\\  |/ ____ \\| |____    / /   | |  / /",
-  "   |_|  |______|_|  \\_\\_|  |_|_____|_| \\_/_/    \\_\\______|  /_/    |_| /_/",
-  "</span>",
-  "",
-  "TERMINAL 719 — LOCAL COGNITION INTERFACE",
-  "INFERENCE LINK ............ OLLAMA @ LOCALHOST",
-  "UPLINK TO CLOUD ........... <span style='color:var(--amber)'>SEVERED (BY DESIGN)</span>",
-  "ALL SYSTEMS NOMINAL. AWAITING INPUT_",
-  "</div>",
-].join("\n");
+const LOGO_PREFIX = [
+  " _______ ______ _____  __  __ _____ _   _          _        ",
+  "|__   __|  ____|  __ \\|  \\/  |_   _| \\ | |   /\\   | |       ",
+  "   | |  | |__  | |__) | \\  / | | | |  \\| |  /  \\  | |       ",
+  "   | |  |  __| |  _  /| |\\/| | | | | . ` | / /\\ \\ | |       ",
+  "   | |  | |____| | \\ \\| |  | |_| |_| |\\  |/ ____ \\| |____   ",
+  "   |_|  |______|_|  \\_\\_|  |_|_____|_| \\_/_/    \\_\\______|  ",
+  "                                                            ",
+  "                                                            "
+];
+const LOGO_DIGITS = {
+  "0": ["  ___  ", " / _ \\ ", "| | | |", "| | | |", "| |_| |", " \\___/ ", "       ", "       "],
+  "1": [" __ ", "/_ |", " | |", " | |", " | |", " |_|", "    ", "    "],
+  "2": [" ___  ", "|__ \\ ", "   ) |", "  / / ", " / /_ ", "|____|", "      ", "      "],
+  "3": [" ____  ", "|___ \\ ", "  __) |", " |__ < ", " ___) |", "|____/ ", "       ", "       "],
+  "4": [" _  _   ", "| || |  ", "| || |_ ", "|__   _|", "   | |  ", "   |_|  ", "        ", "        "],
+  "5": [" _____ ", "| ____|", "| |__  ", "|___ \\ ", " ___) |", "|____/ ", "       ", "       "],
+  "6": ["   __  ", "  / /  ", " / /_  ", "| '_ \\ ", "| (_) |", " \\___/ ", "       ", "       "],
+  "7": [" ______ ", "|____  |", "    / / ", "   / /  ", "  / /   ", " /_/    ", "        ", "        "],
+  "8": ["  ___  ", " / _ \\ ", "| (_) |", " > _ < ", "| (_) |", " \\___/ ", "       ", "       "],
+  "9": ["  ___  ", " / _ \\ ", "| (_) |", " \\__, |", "   / / ", "  /_/  ", "       ", "       "],
+  " ": ["    ", "    ", "    ", "    ", "    ", "    ", "    ", "    "]
+};
+
+// The terminal names itself after the current date: month + 2-digit day
+// (7/21 -> 721, 12/25 -> 1225). ?n=NNN in the URL overrides, for testing.
+function terminalNumber(d) {
+  const q = new URLSearchParams(location.search).get("n");
+  if (q && /^\d{3,4}$/.test(q)) return q;
+  return String(d.getMonth() + 1) + String(d.getDate()).padStart(2, "0");
+}
+
+let termName = "719"; // boots under its original designation, then re-designates
+
+// Compose the boot logo for any digit string; digits in `noisy` render
+// with a fraction of their cells garbled (used mid-transition).
+function logoRows(num, noisy) {
+  const G = "|/\\_()=+*#%";
+  const rows = [];
+  for (let r = 0; r < 8; r++) {
+    let line = LOGO_PREFIX[r];
+    for (let i = 0; i < num.length; i++) {
+      let part = (LOGO_DIGITS[num[i]] || LOGO_DIGITS[" "])[r];
+      if (noisy && noisy.has(i)) {
+        part = part.replace(/[^ ]/g, (c) =>
+          Math.random() < 0.3 ? G[Math.floor(Math.random() * G.length)] : c);
+      }
+      line += part;
+    }
+    rows.push(line);
+  }
+  return rows;
+}
+
+function bootScreen(num) {
+  return [
+    '<div id="empty"><span class="logo" id="bootLogo">',
+    ...logoRows(num),
+    "</span>",
+    "",
+    `TERMINAL ${num} — LOCAL COGNITION INTERFACE`,
+    "INFERENCE LINK ............ OLLAMA @ LOCALHOST",
+    "UPLINK TO CLOUD ........... <span style='color:var(--amber)'>SEVERED (BY DESIGN)</span>",
+    "ALL SYSTEMS NOMINAL. AWAITING INPUT_",
+    "</div>",
+  ].join("\n");
+}
 
 let history = [];          // [{role, content}]
 let controller = null;     // AbortController while generating
@@ -523,7 +574,7 @@ let modelCanThink = false; // whether the selected model supports thinking
 
 const KEEP_ALIVE = "30m";  // keep the model loaded between messages
 
-messagesEl.innerHTML = BOOT_SCREEN;
+messagesEl.innerHTML = bootScreen(termName);
 
 // ---- model list / status -------------------------------------------------
 
@@ -922,9 +973,62 @@ el("mdToggle").addEventListener("change", () => {
 });
 el("clearBtn").addEventListener("click", () => {
   history = [];
-  messagesEl.innerHTML = BOOT_SCREEN;
+  messagesEl.innerHTML = bootScreen(termName);
   inputEl.focus();
 });
+
+// ---- re-designation sequence ----------------------------------------------
+// Boot as TERMINAL 719 (the original designation), then two seconds in,
+// Matrix-style decode to today's number: digits garble through random
+// glyphs and lock in left to right — logo, header, and tab title together.
+function runRedesignation() {
+  const to = terminalNumber(new Date());
+  if (to === termName) return;
+  const from = termName;
+  const len = Math.max(from.length, to.length);
+  const fromP = from.padEnd(len);
+  const toP = to.padEnd(len);
+  // each digit locks in a bit later than the one before it
+  const locks = Array.from({ length: len }, (_, i) => 0.3 + 0.55 * ((i + 1) / len));
+  const brand = el("brand");
+  const dur = 1900;
+  const t0 = performance.now();
+
+  const finish = () => {
+    termName = to;
+    brand.textContent = "TERMINAL " + to;
+    document.title = "Terminal " + to;
+    if (el("empty")) messagesEl.innerHTML = bootScreen(termName);
+  };
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    finish();
+    return;
+  }
+
+  const frame = (now) => {
+    const t = Math.min(1, (now - t0) / dur);
+    let s = "";
+    const noisy = new Set();
+    for (let i = 0; i < len; i++) {
+      if (t >= locks[i]) {
+        s += toP[i];
+      } else if (t < 0.12) {
+        s += fromP[i];
+      } else {
+        s += "0123456789"[Math.floor(Math.random() * 10)];
+        noisy.add(i);
+      }
+    }
+    brand.textContent = ("TERMINAL " + s).trimEnd();
+    document.title = ("Terminal " + s).trimEnd();
+    const logo = el("bootLogo");
+    if (logo) logo.textContent = logoRows(s, noisy).join("\n");
+    if (t < 1) requestAnimationFrame(frame);
+    else finish();
+  };
+  requestAnimationFrame(frame);
+}
+setTimeout(runRedesignation, 2000);
 
 loadModels();
 inputEl.focus();
