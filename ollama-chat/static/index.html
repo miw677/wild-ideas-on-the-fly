@@ -1022,7 +1022,9 @@ function runRedesignation() {
     brand.textContent = ("TERMINAL " + s).trimEnd();
     document.title = ("Terminal " + s).trimEnd();
     const logo = el("bootLogo");
-    if (logo) logo.textContent = logoRows(s, noisy).join("\n");
+    // keep the leading/trailing newlines the static markup has, or the
+    // boot screen jumps one line up during the transition
+    if (logo) logo.textContent = "\n" + logoRows(s, noisy).join("\n") + "\n";
     if (t < 1) requestAnimationFrame(frame);
     else finish();
   };
