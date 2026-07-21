@@ -12,6 +12,9 @@ no API keys, no cloud, no npm install. Just Python 3 and a browser.
 - 📝 TUI-style markdown: headings, bold/italic, lists, quotes and rules
   rendered with phosphor brightness, underline and box-drawing — the
   type never leaves the terminal grid (toggle in settings)
+- 🧮 Terminal math: LaTeX fragments ($T+1$, \frac, Greek, sub/superscripts)
+  are normalized to plain Unicode and shown on the amber phosphor;
+  untranslatable expressions stay verbatim
 - 🔄 Model picker — switches between any model you've pulled (`ollama list`)
 - 🧠 Multi-turn conversations with a bounded memory window
 - ⚙️ Settings panel — system prompt, temperature, memory length

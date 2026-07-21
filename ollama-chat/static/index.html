@@ -321,6 +321,13 @@
     padding-left: 1ch;
     color: var(--phos-dim);
   }
+  /* math renders on the amber phosphor — the other classic CRT color */
+  .md-m {
+    color: var(--amber);
+    background: rgba(255, 176, 0, 0.06);
+    padding: 0 3px;
+    text-shadow: 0 0 5px rgba(255, 176, 0, 0.5), 0 0 14px rgba(255, 176, 0, 0.12);
+  }
   .meta {
     font-size: 16px;
     color: var(--phos-dim);
@@ -647,6 +654,94 @@ modelSelect.addEventListener("change", () => {
 // so model output can't inject markup. Everything unrecognized (tables,
 // links, LaTeX) is left verbatim: raw text beats mangled formatting.
 
+// ---- terminal math ---------------------------------------------------------
+// LaTeX fragments ($x$, $$x$$, \(x\), \[x\]) are normalized to plain
+// Unicode and shown on the amber phosphor. Anything the translator
+// can't fully convert is left verbatim — raw beats mangled.
+
+const TEX_SYMBOLS = {
+  times: "×", cdot: "·", div: "÷", pm: "±", mp: "∓",
+  leq: "≤", le: "≤", geq: "≥", ge: "≥", neq: "≠", ne: "≠",
+  approx: "≈", equiv: "≡", propto: "∝", infty: "∞",
+  to: "→", rightarrow: "→", leftarrow: "←", Rightarrow: "⇒",
+  Leftarrow: "⇐", leftrightarrow: "↔", iff: "⇔", mapsto: "↦",
+  in: "∈", notin: "∉", subset: "⊂", supset: "⊃", subseteq: "⊆",
+  cup: "∪", cap: "∩", emptyset: "∅", setminus: "∖",
+  forall: "∀", exists: "∃", neg: "¬", land: "∧", lor: "∨",
+  partial: "∂", nabla: "∇", sum: "Σ", prod: "Π", int: "∫", sqrt: "√",
+  angle: "∠", perp: "⊥", parallel: "∥", therefore: "∴", because: "∵",
+  ldots: "…", dots: "…", cdots: "⋯", prime: "′", degree: "°", circ: "°",
+  alpha: "α", beta: "β", gamma: "γ", delta: "δ", epsilon: "ε",
+  varepsilon: "ε", zeta: "ζ", eta: "η", theta: "θ", vartheta: "θ",
+  iota: "ι", kappa: "κ", lambda: "λ", mu: "μ", nu: "ν", xi: "ξ",
+  pi: "π", varpi: "π",
+  rho: "ρ", sigma: "σ", tau: "τ", upsilon: "υ", phi: "φ", varphi: "φ",
+  chi: "χ", psi: "ψ", omega: "ω",
+  Gamma: "Γ", Delta: "Δ", Theta: "Θ", Lambda: "Λ", Xi: "Ξ", Pi: "Π",
+  Sigma: "Σ", Upsilon: "Υ", Phi: "Φ", Psi: "Ψ", Omega: "Ω",
+};
+const SUP_CHARS = { "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵",
+  "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", "+": "⁺", "-": "⁻", "=": "⁼",
+  "(": "⁽", ")": "⁾", n: "ⁿ", i: "ⁱ" };
+const SUB_CHARS = { "0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄", "5": "₅",
+  "6": "₆", "7": "₇", "8": "₈", "9": "₉", "+": "₊", "-": "₋", "=": "₌",
+  "(": "₍", ")": "₎" };
+
+function texToUnicode(src) {
+  let t = src;
+  const paren = (x) => (x.length > 1 ? "(" + x + ")" : x);
+  for (let i = 0; i < 3; i++) { // a few passes for shallow nesting
+    t = t.replace(/\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g,
+      (_, a, b) => paren(a) + "/" + paren(b));
+  }
+  t = t.replace(/\\(?:text|textrm|mathrm|mathbf|mathit|mathcal|mathbb|operatorname)\s*\{([^{}]*)\}/g, "$1");
+  t = t.replace(/\\(?:left|right)\b/g, "");
+  t = t.replace(/\\[,;:!]/g, " ");
+  t = t.replace(/\\\\/g, " ");
+  t = t.replace(/\\([a-zA-Z]+)/g, (m, name) =>
+    name in TEX_SYMBOLS ? TEX_SYMBOLS[name] : m);
+  const mapChars = (str, table) => {
+    let out = "";
+    for (const c of str) {
+      if (!(c in table)) return null;
+      out += table[c];
+    }
+    return out;
+  };
+  t = t.replace(/\^\{([^{}]*)\}|\^([^\s{])/g,
+    (m, a, b) => mapChars(a ?? b, SUP_CHARS) ?? "^(" + (a ?? b) + ")");
+  t = t.replace(/_\{([^{}]*)\}|_([^\s{])/g,
+    (m, a, b) => mapChars(a ?? b, SUB_CHARS) ?? "_(" + (a ?? b) + ")");
+  if (t.includes("\\")) return null; // commands we don't know: bail out
+  t = t.replace(/[{}]/g, "").replace(/\s+/g, " ").trim();
+  return t;
+}
+
+const MATH_RX = /\$\$([^$]+)\$\$|\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)|\$([^$\n]+)\$/g;
+
+function renderMath(target, s) {
+  MATH_RX.lastIndex = 0;
+  let last = 0;
+  let m;
+  while ((m = MATH_RX.exec(s))) {
+    const body = m[1] ?? m[2] ?? m[3] ?? m[4];
+    // single-$ heuristic: reject bodies with edge whitespace so prose
+    // like "$5 and $10" isn't mistaken for a formula
+    const isCurrency = m[4] !== undefined && /^\s|\s$/.test(m[4]);
+    const uni = isCurrency ? null : texToUnicode(body);
+    if (uni === null || uni === "") {
+      continue; // leave this span for the surrounding text pass
+    }
+    if (m.index > last) renderEmphasis(target, s.slice(last, m.index));
+    const span = document.createElement("span");
+    span.className = "md-m";
+    span.textContent = uni;
+    target.appendChild(span);
+    last = m.index + m[0].length;
+  }
+  if (last < s.length) renderEmphasis(target, s.slice(last));
+}
+
 // *italic* spans (underlined — terminals had no italics, but had underline)
 function renderItalic(target, s) {
   const parts = s.split(/\*([^*\n]+)\*/);
@@ -689,7 +784,7 @@ function renderInline(target, s, md) {
       c.textContent = parts[i];
       target.appendChild(c);
     } else if (md) {
-      renderEmphasis(target, parts[i]);
+      renderMath(target, parts[i]);
     } else {
       target.appendChild(document.createTextNode(parts[i]));
     }
