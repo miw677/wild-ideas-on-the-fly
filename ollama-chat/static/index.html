@@ -560,10 +560,11 @@ function bootScreen(num) {
     '<div id="empty"><span class="logo" id="bootLogo">',
     ...logoRows(num),
     "</span>",
-    "",
     `TERMINAL ${num} — LOCAL COGNITION INTERFACE`,
-    "INFERENCE LINK ............ OLLAMA @ LOCALHOST",
+    "INFERENCE LINK ............ LOCALHOST:8080",
     "UPLINK TO CLOUD ........... <span style='color:var(--amber)'>SEVERED (BY DESIGN)</span>",
+    "ADMINISTRATOR ............. <span style='color:var(--red)'>JUSTIN WEI (justinwe@mit.edu)</span>",
+    "",
     "ALL SYSTEMS NOMINAL. AWAITING INPUT_",
     "</div>",
   ].join("\n");
