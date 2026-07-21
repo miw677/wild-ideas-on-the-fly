@@ -59,6 +59,7 @@
     --amber: #ffb000;            /* warnings */
     --red: #ff4433;              /* errors / offline */
     --glow: 0 0 5px rgba(51, 255, 51, 0.55), 0 0 14px rgba(51, 255, 51, 0.14);
+    --term-name: "719";      /* reply prefix; follows the re-designation */
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
@@ -264,7 +265,7 @@
   .msg.user .bubble { color: var(--phos-bright); }
   .msg.user .bubble::before { content: "> "; }
   .msg.assistant .bubble::before {
-    content: "719: ";
+    content: var(--term-name) ": ";
     color: var(--phos-dim);
   }
   .msg.assistant .bubble.thinking:empty::after,
@@ -998,6 +999,7 @@ function runRedesignation() {
     termName = to;
     brand.textContent = "TERMINAL " + to;
     document.title = "Terminal " + to;
+    document.documentElement.style.setProperty("--term-name", JSON.stringify(to));
     if (el("empty")) messagesEl.innerHTML = bootScreen(termName);
   };
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -1021,6 +1023,7 @@ function runRedesignation() {
     }
     brand.textContent = ("TERMINAL " + s).trimEnd();
     document.title = ("Terminal " + s).trimEnd();
+    document.documentElement.style.setProperty("--term-name", JSON.stringify(s.trimEnd()));
     const logo = el("bootLogo");
     // keep the leading/trailing newlines the static markup has, or the
     // boot screen jumps one line up during the transition
