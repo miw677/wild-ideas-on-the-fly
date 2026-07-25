@@ -48,11 +48,18 @@ canvas{max-height:400px}
 <body>
 
 <h1>美国绿卡排期可视化 · EB2 / EB3 中国大陆</h1>
-<p class="subtitle">数据来源：美国国务院 Visa Bulletin | <strong>完整历史数据：2022年10月–2026年7月（共46个月）</strong> | 含预测延伸</p>
+<p class="subtitle">数据来源：美国国务院 Visa Bulletin | <strong>完整历史数据：2022年10月–2026年8月（共47个月）</strong> | 含预测延伸</p>
 
 <div class="alert-red">
-  <strong>⚠️ 关键警示（2026年7月公告）</strong>
-  EB2 中国表A（Final Action Date）因签证年度用量快速消耗，<strong>官方明示可能出现倒退（Retrogression）</strong>，当前冻结在 2021年9月 已达 7 个月。
+  <strong>⚠️ 关键警示（2026年8月公告）</strong>
+  EB2 中国表A（Final Action Date）因签证年度用量快速消耗，<strong>官方明示可能倒退或整类关闭（Retrogression / Unavailable）</strong>，当前冻结在 2021年9月 已连续 6 个月。EB2 <strong>印度已于本月起整个财年不可用（U）</strong>。
+</div>
+
+<div class="alert-red">
+  <strong>🚨 结构性变化：USCIS 已连续 4 个月要求就业类使用「表A」递交 I-485</strong>
+  自 <strong>2026年5月</strong> 起至 8月，USCIS 不再接受就业类按表B（Dates for Filing）递件，家庭类仍用表B。
+  <strong>这意味着下方的表B曲线目前不具备递件效力</strong>——即使表B排到你的优先日期，也无法递交 I-485，
+  除非 USCIS 改回表B。规划时请以<strong>表A</strong>为准。
 </div>
 
 <div class="alert-amber">
@@ -79,16 +86,16 @@ canvas{max-height:400px}
     <span class="badge info">预计 2027年10月（FY2028跳跃）</span>
   </div>
   <div class="card c3">
-    <div class="card-tag">EB3 中国 · 表A Final</div>
-    <div class="card-date">2021年12月 🟢</div>
-    <div class="card-gap">距 2023年5月 → 差 <strong>17个月</strong></div>
-    <span class="badge ok">预计 2027年底–2028年初</span>
+    <div class="card-tag">EB3 中国 · 表A Final ⬅️ 目前唯一有效的递件依据</div>
+    <div class="card-date">2022年1月1日 🟢 <span style="font-size:.6em;color:#16a34a">+10天</span></div>
+    <div class="card-gap">距 2023年5月 → 差 <strong>16个月</strong></div>
+    <span class="badge ok">预计 2028年Q1–Q2（中位数）</span>
   </div>
   <div class="card c4">
-    <div class="card-tag">EB3 中国 · 表B Filing</div>
-    <div class="card-date">2022年1月 🟡</div>
+    <div class="card-tag">EB3 中国 · 表B Filing（当前无递件效力）</div>
+    <div class="card-date">2022年1月8日 🟡 <span style="font-size:.6em;color:#16a34a">+7天</span></div>
     <div class="card-gap">距 2023年5月 → 差 <strong>16个月</strong></div>
-    <span class="badge warn">预计 2027年10月（高度不确定）</span>
+    <span class="badge warn">USCIS 自2026年5月起不采用表B</span>
   </div>
 </div>
 
@@ -116,7 +123,7 @@ canvas{max-height:400px}
 
 <!-- Chart 3: All-in-one comparison -->
 <div class="chart-wrap">
-  <div class="chart-title">四线全对比 · 历史数据（2022年10月–2026年7月）</div>
+  <div class="chart-title">四线全对比 · 历史数据（2022年10月–2026年8月）</div>
   <div class="chart-note">EB2 蓝色系 / EB3 绿色系 · 实线=表A Final · 虚线=表B Filing · 红横线=目标 · 灰竖线=财年起点</div>
   <canvas id="c3"></canvas>
   <div class="chart-legend-note">
@@ -135,7 +142,7 @@ canvas{max-height:400px}
       <tr><td>FY2024</td><td>Oct 2019 (EB2) / Jan 2020 (EB3)</td><td>Mar 2020 / Sep 2020</td><td>EB2: +5月 / EB3: +12月</td><td>EB2: 0.42/mo / EB3: 1.00/mo</td></tr>
       <tr><td>FY2025</td><td>Mar 2020 / <span class="retro">Apr 2020⬇️</span></td><td>Dec 2020</td><td>EB2: +9月 / EB3: +8月（含倒退后）</td><td>EB2: 0.75/mo / EB3: 0.67/mo</td></tr>
       <tr><td>FY2026*</td><td>Apr 2021 / Mar 2021</td><td>Sep 2021 (冻结) / Dec 2021</td><td>EB2: +5月(冻结) / EB3: +9.7月</td><td>EB2: <span class="retro">0.50(冻结)</span> / EB3: <span class="jump">0.97/mo</span></td></tr>
-      <tr><td colspan="5" style="color:#94a3b8;font-style:italic">*FY2026截至2026年7月（已进行10个月）</td></tr>
+      <tr><td colspan="5" style="color:#94a3b8;font-style:italic">*FY2026截至2026年8月（已进行11个月）</td></tr>
     </table>
   </div>
   <div class="chart-wrap">
@@ -192,7 +199,7 @@ const EB2FA=[
   [ts('2025-10'),39],[ts('2025-11'),39],[ts('2025-12'),41],
   [ts('2026-01'),44],[ts('2026-02'),44],[ts('2026-03'),44],
   [ts('2026-04'),44],[ts('2026-05'),44],[ts('2026-06'),44],
-  [ts('2026-07'),44]
+  [ts('2026-07'),44],[ts('2026-08'),44]
 ].map(([x,y])=>({x,y}));
 
 // EB2 China — Table B Filing Date
@@ -216,7 +223,7 @@ const EB2FI=[
   [ts('2025-10'),47],[ts('2025-11'),47],[ts('2025-12'),47],
   [ts('2026-01'),48],[ts('2026-02'),48],[ts('2026-03'),48],
   [ts('2026-04'),48],[ts('2026-05'),48],[ts('2026-06'),48],
-  [ts('2026-07'),48]
+  [ts('2026-07'),48],[ts('2026-08'),48]
 ].map(([x,y])=>({x,y}));
 
 // EB3 China — Table A Final Action Date
@@ -240,7 +247,7 @@ const EB3FA=[
   [ts('2025-10'),38],[ts('2025-11'),38],[ts('2025-12'),39],
   [ts('2026-01'),40],[ts('2026-02'),40],[ts('2026-03'),40],
   [ts('2026-04'),41],[ts('2026-05'),41],[ts('2026-06'),43],
-  [ts('2026-07'),47]
+  [ts('2026-07'),47],[ts('2026-08'),48]
 ].map(([x,y])=>({x,y}));
 
 // EB3 China — Table B Filing Date
@@ -264,7 +271,7 @@ const EB3FI=[
   [ts('2025-10'),48],[ts('2025-11'),48],[ts('2025-12'),48],
   [ts('2026-01'),48],[ts('2026-02'),48],[ts('2026-03'),48],
   [ts('2026-04'),48],[ts('2026-05'),48],[ts('2026-06'),48],
-  [ts('2026-07'),48]
+  [ts('2026-07'),48],[ts('2026-08'),48]
 ].map(([x,y])=>({x,y}));
 
 // ── projection helpers ──────────────────────────────────────────────────────
@@ -293,25 +300,25 @@ function stepProj(startYM,startVal,annualJump,innerRate,endYM){
 // ── projection data ─────────────────────────────────────────────────────────
 // EB2 Final: frozen → resumes from Oct 2026 at 0.6/mo (conservative, retrogression risk)
 const eb2FaProj=[
-  {x:ts('2026-07'),y:44},{x:ts('2026-08'),y:44},{x:ts('2026-09'),y:44},
+  {x:ts('2026-08'),y:44},{x:ts('2026-09'),y:44},
   ...linProj('2026-10',44,0.6,'2030-06')
 ];
 
 // EB2 Filing: FY2027 jump +11 at Oct 2026; subsequent +11 each Oct
 const eb2FiProj=[
-  {x:ts('2026-07'),y:48},{x:ts('2026-08'),y:48},{x:ts('2026-09'),y:48},
+  {x:ts('2026-08'),y:48},{x:ts('2026-09'),y:48},
   ...stepProj('2026-10',48+11,11,0.1,'2029-12')
 ];
 
 // EB3 Final: linear at 0.87/mo (3-year historical average)
 const eb3FaProj=[
-  {x:ts('2026-07'),y:47},
-  ...linProj('2026-08',47,0.87,'2028-09')
+  {x:ts('2026-08'),y:48},
+  ...linProj('2026-09',48,0.87,'2028-09')
 ];
 
 // EB3 Filing: FY2027 jump +12 (same as FY2026); subsequent +12 each Oct
 const eb3FiProj=[
-  {x:ts('2026-07'),y:48},{x:ts('2026-08'),y:48},{x:ts('2026-09'),y:48},
+  {x:ts('2026-08'),y:48},{x:ts('2026-09'),y:48},
   ...stepProj('2026-10',48+12,12,0.1,'2029-12')
 ];
 
